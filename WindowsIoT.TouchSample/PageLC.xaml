@@ -1,0 +1,287 @@
+﻿<Page
+    x:Class="WindowsIoT.PageLC"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    mc:Ignorable="d">
+    <Page.Resources>
+        <Style TargetType="PivotHeaderItem">
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="Foreground" Value="{ThemeResource SystemControlForegroundBaseMediumBrush}" />
+            <Setter Property="Padding" Value="{ThemeResource PivotHeaderItemMargin}" />
+            <Setter Property="Height" Value="48" />
+            <Setter Property="VerticalContentAlignment" Value="Center" />
+            <Setter Property="IsTabStop" Value="False" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="PivotHeaderItem">
+                        <Grid x:Name="Grid" Margin="10,0" Background="{TemplateBinding Background}">
+                            <Grid.Resources>
+                                <Style x:Key="BaseContentPresenterStyle" TargetType="ContentPresenter">
+                                    <Setter Property="FontFamily" Value="XamlAutoFontFamily" />
+                                    <Setter Property="FontWeight" Value="SemiBold" />
+                                    <Setter Property="FontSize" Value="15" />
+                                    <Setter Property="TextLineBounds" Value="Full"/>
+                                    <Setter Property="OpticalMarginAlignment" Value="TrimSideBearings"/>
+                                </Style>
+                                <Style x:Key="BodyContentPresenterStyle" BasedOn="{StaticResource BaseContentPresenterStyle}" TargetType="ContentPresenter">
+                                    <Setter Property="FontFamily" Value="{ThemeResource PivotHeaderItemFontFamily}" />
+                                    <Setter Property="FontWeight" Value="{ThemeResource PivotHeaderItemThemeFontWeight}" />
+                                    <Setter Property="FontSize" Value="{ThemeResource PivotHeaderItemFontSize}" />
+                                </Style>
+                            </Grid.Resources>
+                            <VisualStateManager.VisualStateGroups>
+                                <VisualStateGroup x:Name="SelectionStates">
+                                    <VisualStateGroup.Transitions>
+                                        <VisualTransition From="Unselected" To="UnselectedLocked" GeneratedDuration="0:0:0.33" />
+                                        <VisualTransition From="UnselectedLocked" To="Unselected" GeneratedDuration="0:0:0.33" />
+                                    </VisualStateGroup.Transitions>
+                                    <VisualState x:Name="Disabled">
+                                        <Storyboard>
+                                            <ObjectAnimationUsingKeyFrames Storyboard.TargetName="ContentPresenter" Storyboard.TargetProperty="Foreground">
+                                                <DiscreteObjectKeyFrame KeyTime="0" Value="{ThemeResource SystemControlDisabledBaseMediumLowBrush}" />
+                                            </ObjectAnimationUsingKeyFrames>
+                                        </Storyboard>
+                                    </VisualState>
+                                    <VisualState x:Name="Unselected" />
+                                    <VisualState x:Name="UnselectedLocked">
+                                        <Storyboard>
+                                            <DoubleAnimation Duration="0"
+                                                             Storyboard.TargetName="ContentPresenterTranslateTransform"
+                                                             Storyboard.TargetProperty="X"
+                                                             To="{ThemeResource PivotHeaderItemLockedTranslation}" />
+                                            <DoubleAnimation Duration="0"
+                                                             Storyboard.TargetName="ContentPresenter"
+                                                             Storyboard.TargetProperty="(UIElement.Opacity)"
+                                                             To="0" />
+                                        </Storyboard>
+                                    </VisualState>
+                                    <VisualState x:Name="Selected">
+                                        <VisualState.Setters>
+                                            <Setter Target="FocusPipe.Visibility" Value="Visible"/>
+                                        </VisualState.Setters>
+                                    </VisualState>
+                                </VisualStateGroup>
+                                <VisualStateGroup x:Name="FocusStates">
+                                    <VisualState x:Name="Focused">
+                                        <VisualState.Setters>
+                                            <Setter Target="FocusPipe.Visibility" Value="Visible"/>
+                                        </VisualState.Setters>
+                                    </VisualState>
+                                    <VisualState x:Name="Unfocused"/>
+                                </VisualStateGroup>
+                            </VisualStateManager.VisualStateGroups>
+                            <ContentPresenter x:Name="ContentPresenter"
+                                                  Margin="{TemplateBinding Padding}"
+                                                  HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
+                                                  VerticalAlignment="{TemplateBinding VerticalContentAlignment}"
+                                                  Content="{TemplateBinding Content}"
+                                                  ContentTemplate="{TemplateBinding ContentTemplate}"
+                                                  FontFamily="{TemplateBinding FontFamily}"
+                                                  FontSize="{TemplateBinding FontSize}"
+                                                  FontWeight="{TemplateBinding FontWeight}">
+                                <ContentPresenter.RenderTransform>
+                                    <TranslateTransform x:Name="ContentPresenterTranslateTransform" />
+                                </ContentPresenter.RenderTransform>
+                            </ContentPresenter>
+                            <Rectangle x:Name="FocusPipe" Fill="Teal" Height="3" VerticalAlignment="Bottom" HorizontalAlignment="Stretch" Visibility="Collapsed"/>
+                        </Grid>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+        <Style TargetType="TextBlock">
+            <Setter Property="Margin" Value="4"/>
+            <Setter Property="FontSize" Value="24%"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+            <Setter Property="HorizontalTextAlignment" Value="End"/>
+            <Setter Property="Text" Value="N/A"/>
+        </Style>
+        <Style x:Key="TextValue" TargetType="TextBlock">
+            <Setter Property="FontSize" Value="20%"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+            <Setter Property="HorizontalAlignment" Value="Center"/>
+            <Setter Property="Text" Value="N/A"/>
+        </Style>
+        <Style x:Key="LampLevel" TargetType="Slider">
+            <Setter Property="Minimum" Value="0"/>
+            <Setter Property="Maximum" Value="100"/>
+            <Setter Property="TickFrequency" Value="20"/>
+            <Setter Property="StepFrequency" Value="1"/>
+            <Setter Property="TickPlacement" Value="BottomRight"/>
+            <Setter Property="SnapsTo" Value="StepValues"/>
+            <Setter Property="Margin" Value="10"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+        </Style>
+        <Style x:Key="MinLevel" TargetType="Slider">
+            <Setter Property="Minimum" Value="2"/>
+            <Setter Property="Maximum" Value="75"/>
+            <Setter Property="TickFrequency" Value="15"/>
+            <Setter Property="StepFrequency" Value="1"/>
+            <Setter Property="TickPlacement" Value="BottomRight"/>
+            <Setter Property="SnapsTo" Value="StepValues"/>
+            <Setter Property="Margin" Value="10"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+        </Style>
+        <Style TargetType="Slider">
+            <Setter Property="TickPlacement" Value="BottomRight"/>
+            <Setter Property="SnapsTo" Value="StepValues"/>
+            <Setter Property="Margin" Value="10"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+        </Style>
+    </Page.Resources>
+    <Grid Name="LayoutRoot" Background="{ThemeResource ApplicationPageBackgroundThemeBrush}" RequestedTheme="Dark">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="10*"/>
+            <RowDefinition Height="1*"/>
+        </Grid.RowDefinitions>
+        <TextBlock Grid.Row="1" Name="rsLoad" Text="RS485 load: N/A" FontSize="20%" HorizontalAlignment="Center"/>
+        <Pivot Grid.Row="0" Name="pivot" Title="Kitchen">
+            <Pivot.RightHeader>
+                <CommandBar ClosedDisplayMode="Compact" DefaultLabelPosition="Right" OverflowButtonVisibility="Collapsed">
+                    <AppBarButton Icon="Back" Label="Main" Click="Snm_BackRequested"/>
+                </CommandBar>
+            </Pivot.RightHeader>
+            <PivotItem Name="group" Header="Group" ScrollViewer.VerticalScrollBarVisibility="Hidden">
+                <Grid ScrollViewer.VerticalScrollBarVisibility="Auto">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="1*"/>
+                        <RowDefinition Height="1*"/>
+                        <RowDefinition Height="1*"/>
+                        <RowDefinition Height="1*"/>
+                    </Grid.RowDefinitions>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="2*"/>
+                        <ColumnDefinition Width="6*"/>
+                        <ColumnDefinition Width="1*"/>
+                    </Grid.ColumnDefinitions>
+                    <TextBlock Grid.Row="0" Grid.Column="0" Text="Level:"/>
+                    <TextBlock Grid.Row="1" Grid.Column="0" Text="Min. level:"/>
+                    <TextBlock Grid.Row="2" Grid.Column="0" Text="Fade rate:"/>
+                    <TextBlock Grid.Row="3" Grid.Column="0" Text="Delay:"/>
+
+                    <Slider Grid.Row="0" Grid.Column="1" x:Name="groupSLlvl" ValueChanged="GroupSLlvl_ValueChanged" Style="{StaticResource LampLevel}"/>
+                    <TextBlock Grid.Row="0" Grid.Column="2" Name="groupTlvl" Style="{StaticResource TextValue}"/>
+                    <Slider Grid.Row="1" Grid.Column="1" x:Name="groupSLminlvl" ValueChanged="GroupSLminlvl_ValueChanged" Style="{StaticResource MinLevel}"/>
+                    <TextBlock Grid.Row="1" Grid.Column="2" Name="groupTminLvl" Style="{StaticResource TextValue}"/>
+                    <Slider Grid.Row="2" Grid.Column="1" x:Name="groupSLfr" Minimum="12" Maximum="60" TickFrequency="10" StepFrequency="1"/>
+                    <TextBlock Grid.Row="2" Grid.Column="2" Name="groupTfr" Style="{StaticResource TextValue}"/>
+                    <Slider Grid.Row="3" Grid.Column="1" x:Name="groupSLdelay" Minimum=".1" Maximum="2.0" TickFrequency=".5" StepFrequency=".1"/>
+                    <TextBlock Grid.Row="3" Grid.Column="2" Name="groupTdelay" Style="{StaticResource TextValue}"/>
+                </Grid>
+            </PivotItem>
+            <PivotItem Name="lampA" Header="Lamp A" ScrollViewer.VerticalScrollBarVisibility="Hidden">
+                <Grid ScrollViewer.VerticalScrollBarVisibility="Auto">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="1*"/>
+                        <RowDefinition Height="1*"/>
+                        <RowDefinition Height="1*"/>
+                        <RowDefinition Height="1*"/>
+                    </Grid.RowDefinitions>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="2*"/>
+                        <ColumnDefinition Width="6*"/>
+                        <ColumnDefinition Width="1*"/>
+                    </Grid.ColumnDefinitions>
+                    <TextBlock Grid.Row="0" Grid.Column="0" Text="Level:"/>
+                    <TextBlock Grid.Row="1" Grid.Column="0" Text="Min. level:"/>
+                    <TextBlock Grid.Row="2" Grid.Column="0" Text="On-time:"/>
+                    <TextBlock Grid.Row="3" Grid.Column="0" Text="On/off:"/>
+
+                    <Slider Grid.Row="0" Grid.Column="1" x:Name="lampaSLlvl" ValueChanged="LampaSLlvl_ValueChanged" Style="{StaticResource LampLevel}"/>
+                    <TextBlock Grid.Row="0" Grid.Column="2" Name="lampaTlvl" Style="{StaticResource TextValue}"/>
+
+                    <Slider Grid.Row="1" Grid.Column="1" x:Name="lampaSLminlvl" Style="{StaticResource MinLevel}"/>
+                    <TextBlock Grid.Row="1" Grid.Column="2" Name="lampaTminLvl" Style="{StaticResource TextValue}"/>
+                    <TextBlock Grid.Row="2" Grid.Column="1" Name="lampaOT" FontSize="23%" HorizontalAlignment="Left"/>
+                    <TextBlock Grid.Row="3" Grid.Column="1" Name="lampaSC" FontSize="23%" HorizontalAlignment="Left"/>
+                </Grid>
+            </PivotItem>
+        </Pivot>
+        
+        <PivotItem Header="Lamp B" Name="lampB" Visibility="Collapsed">
+            <Grid ScrollViewer.VerticalScrollBarVisibility="Auto">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="1*"/>
+                    <RowDefinition Height="1*"/>
+                    <RowDefinition Height="1*"/>
+                    <RowDefinition Height="1*"/>
+                </Grid.RowDefinitions>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="2*"/>
+                    <ColumnDefinition Width="6*"/>
+                    <ColumnDefinition Width="1*"/>
+                </Grid.ColumnDefinitions>
+                <TextBlock Grid.Row="0" Grid.Column="0" Text="Level:"/>
+                <TextBlock Grid.Row="1" Grid.Column="0" Text="Min. level:"/>
+                <TextBlock Grid.Row="2" Grid.Column="0" Text="On-time:"/>
+                <TextBlock Grid.Row="3" Grid.Column="0" Text="On/off:"/>
+
+                <Slider Grid.Row="0" Grid.Column="1" x:Name="lampbSLlvl" ValueChanged="LampbSLlvl_ValueChanged" Style="{StaticResource LampLevel}"/>
+                <TextBlock Grid.Row="0" Grid.Column="2" Name="lampbTlvl" Style="{StaticResource TextValue}"/>
+
+                <Slider Grid.Row="1" Grid.Column="1" x:Name="lampbSLminlvl" Style="{StaticResource MinLevel}"/>
+                <TextBlock Grid.Row="1" Grid.Column="2" Name="lampbTminLvl" Style="{StaticResource TextValue}"/>
+                <TextBlock Grid.Row="2" Grid.Column="1" Name="lampbOT" Margin="5" FontSize="23%" VerticalAlignment="Center" HorizontalAlignment="Left"/>
+                <TextBlock Grid.Row="3" Grid.Column="1" Name="lampbSC" Margin="5" FontSize="23%" VerticalAlignment="Center" HorizontalAlignment="Left"/>
+            </Grid>
+        </PivotItem>
+        <PivotItem Header="Lamp C" Name="lampC" Visibility="Collapsed">
+            <Grid ScrollViewer.VerticalScrollBarVisibility="Auto">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="1*"/>
+                    <RowDefinition Height="1*"/>
+                    <RowDefinition Height="1*"/>
+                    <RowDefinition Height="1*"/>
+                </Grid.RowDefinitions>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="2*"/>
+                    <ColumnDefinition Width="6*"/>
+                    <ColumnDefinition Width="1*"/>
+                </Grid.ColumnDefinitions>
+                <TextBlock Grid.Row="0" Grid.Column="0" Text="Level:"/>
+                <TextBlock Grid.Row="1" Grid.Column="0" Text="Min. level:"/>
+                <TextBlock Grid.Row="2" Grid.Column="0" Text="On-time:"/>
+                <TextBlock Grid.Row="3" Grid.Column="0" Text="On/off:"/>
+
+                <Slider Grid.Row="0" Grid.Column="1" x:Name="lampcSLlvl" ValueChanged="LampcSLlvl_ValueChanged" Style="{StaticResource LampLevel}"/>
+                <TextBlock Grid.Row="0" Grid.Column="2" Name="lampcTlvl" Style="{StaticResource TextValue}"/>
+
+                <Slider Grid.Row="1" Grid.Column="1" x:Name="lampcSLminlvl" Style="{StaticResource MinLevel}"/>
+                <TextBlock Grid.Row="1" Grid.Column="2" Name="lampcTminLvl" Style="{StaticResource TextValue}"/>
+                <TextBlock Grid.Row="2" Grid.Column="1" Name="lampcOT" FontSize="23%" HorizontalAlignment="Left"/>
+                <TextBlock Grid.Row="3" Grid.Column="1" Name="lampcSC" FontSize="23%" HorizontalAlignment="Left"/>
+            </Grid>
+        </PivotItem>
+        <PivotItem Name="msen" Header="Motion sensor" Visibility="Collapsed">
+            <Grid ScrollViewer.VerticalScrollBarVisibility="Auto">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="1*"/>
+                    <RowDefinition Height="1*"/>
+                    <RowDefinition Height="1*"/>
+                    <RowDefinition Height="1*"/>
+                </Grid.RowDefinitions>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="2*"/>
+                    <ColumnDefinition Width="6*"/>
+                    <ColumnDefinition Width="1*"/>
+                </Grid.ColumnDefinitions>
+                <TextBlock Grid.Row="0" Grid.Column="0" Text="On time:"/>
+                <TextBlock Grid.Row="1" Grid.Column="0" Text="Low time:"/>
+                <TextBlock Grid.Row="2" Grid.Column="0" Text="Low level:"/>
+                <TextBlock Grid.Row="3" Grid.Column="0" Text="Operation:"/>
+
+                <Slider Grid.Row="0" Grid.Column="1" x:Name="msenOnTime" Minimum="6" Maximum="60" StepFrequency="1" TickFrequency="10"/>
+                <TextBlock Grid.Row="0" Grid.Column="2" Name="msenOT" Style="{StaticResource TextValue}"/>
+                <Slider Grid.Row="1" Grid.Column="1" x:Name="msenLowTime" Minimum="6" Maximum="60" StepFrequency="1" TickFrequency="10"/>
+                <TextBlock Grid.Row="1" Grid.Column="2" Name="msenLT" Style="{StaticResource TextValue}"/>
+                <Slider Grid.Row="2" Grid.Column="1" x:Name="msenLowLvl" Minimum="5" Maximum="50" StepFrequency="1" TickFrequency="10"/>
+                <TextBlock Grid.Row="2" Grid.Column="2" Name="msenLL" Style="{StaticResource TextValue}"/>
+                <ComboBox Grid.Row="3" Grid.Column="1" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" 
+                              Name="opmodecb" VerticalAlignment="Center" Margin="10" ItemsSource="{x:Bind opmode}"/>
+                <TextBlock Grid.Row="3" Grid.Column="2" Name="opmodeT" Style="{StaticResource TextValue}"/>
+            </Grid>
+        </PivotItem>
+    </Grid>
+</Page>
