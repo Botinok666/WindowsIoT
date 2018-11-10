@@ -2,7 +2,6 @@
 using System.Threading.Tasks;
 using Windows.Devices.Enumeration;
 using Windows.Devices.Spi;
-using Microsoft.IoT.Lightning.Providers;
 using System.IO;
 using Windows.Storage;
 using Windows.Foundation;
@@ -69,16 +68,8 @@ namespace TouchPanels.Devices
                 ClockFrequency = 125000,
                 Mode = SpiMode.Mode0 //Mode0,1,2,3;  MCP23S17 needs mode 0
             };
-            if (LightningProvider.IsLightningEnabled)
-            {
-                var spi = await SpiController.GetControllersAsync(LightningSpiProvider.GetSpiProvider());
-                touchSPI = spi[0].GetDevice(touchSettings);
-            }
-            else
-            {
-                var DispdeviceInfo = await DeviceInformation.FindAllAsync(SpiDevice.GetDeviceSelector("SPI0"));
-                touchSPI = await SpiDevice.FromIdAsync(DispdeviceInfo[0].Id, touchSettings);
-            }
+            var DispdeviceInfo = await DeviceInformation.FindAllAsync(SpiDevice.GetDeviceSelector("SPI0"));
+            touchSPI = await SpiDevice.FromIdAsync(DispdeviceInfo[0].Id, touchSettings);
             //set vars
             _lastTouchPosition = new Point(double.NaN, double.NaN);
             _currentPressure = 0;

@@ -7,16 +7,11 @@ using System.Linq;
 using System.Runtime.InteropServices.WindowsRuntime;
 using System.Threading;
 using System.Threading.Tasks;
-using Microsoft.IoT.Lightning.Providers;
-using Microsoft.IoT.Devices.Pwm;
-using Microsoft.IoT.DeviceCore.Pwm;
 using Windows.ApplicationModel;
 using Windows.ApplicationModel.Activation;
 using Windows.Foundation;
 using Windows.Devices.SerialCommunication;
 using Windows.Devices.I2c;
-using Windows.Devices.Pwm;
-using Windows.Devices.Gpio;
 using Windows.Devices.Enumeration;
 using Windows.Networking.Sockets;
 using Windows.Storage.Streams;
@@ -91,12 +86,6 @@ namespace WindowsIoT
             SolarTime = SolarTimeNOAA.GetInstance();
             SolarTime.Configure(timeZoneInfo, 47.215, 38.925);
             brightness = BrightnessControl.GetInstance();
-
-            if (LightningProvider.IsLightningEnabled)
-            {
-                Windows.Devices.LowLevelDevicesController.DefaultProvider = 
-                    LightningProvider.GetAggregateProvider();
-            }
             Suspending += OnSuspending;
         }
 
@@ -259,13 +248,14 @@ namespace WindowsIoT
             {
                 DebugSettings.EnableFrameRateCounter = true;
             }
+
 #endif
 
-            Frame rootFrame = Window.Current.Content as Frame;
+
 
             // Do not repeat app initialization when the Window already has content,
             // just ensure that the window is active
-            if (rootFrame == null)
+            if (!(Window.Current.Content is Frame rootFrame))
             {
                 // Create a Frame to act as the navigation context and navigate to the first page
                 rootFrame = new Frame();
@@ -321,13 +311,9 @@ namespace WindowsIoT
 public class BrightnessControl
 {
     private static BrightnessControl _instance = null;
-    private I2cDevice max44009 = null;
-    private PwmController pwmController = null;
-    private PwmPin pwmPin = null;
-    //private IReadOnlyList<DeviceInformation> i2cDevices, pwmDevices;
-    private float _minLevel, _maxLux, _currentLvl, _tempLvl, _delta;
-    private byte[] command, result;
-    private Timer _timer;
+    private I2cDevice max44009 = null, pca9685 = null;
+    private float _minLevel, _maxLux, _currentLvl;
+    private readonly byte[] pinData, result;
     public enum ControlMode
     { Auto, Fixed }
 
@@ -336,12 +322,9 @@ public class BrightnessControl
         _minLevel = .1f;
         _maxLux = 2000f;
         _currentLvl = .66f;
-        _tempLvl = .67f;
-        _delta = .01f;
         Mode = ControlMode.Auto;
-        _timer = new Timer(TimerTick, null, TimeSpan.FromMilliseconds(-1), TimeSpan.FromSeconds(1 / 30f));
-        command = new byte[1] { 0x03 };
-        result = new byte[2];
+        result = new byte[1];
+        pinData = new byte[5] { 0x06, 0, 0, 0xF0, 0x0F }; //Ton = 0, Toff = 4080
         GetI2Clist();
     }
     /// <summary>
@@ -351,22 +334,7 @@ public class BrightnessControl
     /// </returns>
     public static BrightnessControl GetInstance()
     {
-        if (_instance == null)
-            _instance = new BrightnessControl();
-        return _instance;
-    }
-    private void TimerTick(object sender)
-    {
-        if (!HWStatus)
-            return;
-        if (Math.Abs(_currentLvl - _tempLvl) < _delta)
-        {
-            _currentLvl = _tempLvl;
-            _timer.Change(TimeSpan.FromMilliseconds(-1), TimeSpan.FromSeconds(1 / 30f));
-        }
-        else
-            _currentLvl -= _delta * Math.Sign(_currentLvl - _tempLvl);
-        pwmPin?.SetActiveDutyCyclePercentage(_currentLvl);
+        return _instance ?? (_instance = new BrightnessControl());
     }
     public ControlMode Mode { get; set; }
     /// <summary>
@@ -390,10 +358,7 @@ public class BrightnessControl
         set
         {
             if (Mode == ControlMode.Fixed && HWStatus && value >= .05f && value <= 1f)
-            {
                 _currentLvl = value;
-                pwmPin?.SetActiveDutyCyclePercentage(value);
-            }
         }
     }
     /// <summary>
@@ -408,63 +373,26 @@ public class BrightnessControl
         }
     }
     public string ConfigTrace { get; private set; }
+    private void SetDutyCycle()
+    {
+        BitConverter.GetBytes((ushort)((1 - Level) * 4000)).CopyTo(pinData, 1);
+        pca9685.Write(pinData);
+    }
     private async void GetI2Clist()
     {
         ConfigTrace = "I2C devices: ";
-        if (LightningProvider.IsLightningEnabled)
-        {
-            var i2c = await I2cController.GetControllersAsync(LightningI2cProvider.GetI2cProvider());
-            max44009 = i2c[0].GetDevice(new I2cConnectionSettings(0b1001010));
-            ConfigTrace += max44009 == null ? "none" : max44009.DeviceId + Environment.NewLine;
-            PwmProviderManager pwmProvider = new PwmProviderManager();
-            var pca = new PCA9685() { Address = 0x40 };
-            pwmProvider.Providers.Add(pca);
-            var pwm = await pwmProvider.GetControllersAsync();
-            ConfigTrace += "PWM controllers: " + pwm.Count + Environment.NewLine;
-            pwmController = pwm[0];
-            foreach (var dev in pwm)
-                ConfigTrace += "Pins:" + dev.PinCount + Environment.NewLine;
-            pwmPin = pwmController.OpenPin(1);
-            pwmController.SetDesiredFrequency(144);
-            pwmPin.SetActiveDutyCyclePercentage(.1);
-            pwmPin.Start();
-            ConfigTrace += pwmPin.IsStarted ? string.Format("PWM running at {0:F1}Hz with duty cycle {1:P0}\n",
-                pwmPin.Controller.ActualFrequency, pwmPin.GetActiveDutyCyclePercentage()) : "Failed to start\n";
-        }
-        else
-            ConfigTrace += "lightning not configured" + Environment.NewLine;
-        //else
-        //{
-        //    i2cDevices = await DeviceInformation.FindAllAsync(I2cDevice.GetDeviceSelector());
-        //    ConfigTrace += i2cDevices.Count.ToString() + Environment.NewLine;
-        //    pwmDevices = await DeviceInformation.FindAllAsync(PwmController.GetDeviceSelector());
-        //    ConfigTrace += "PWM devices: " + pwmDevices.Count.ToString() + Environment.NewLine;
-        //    var i2cSettings = new I2cConnectionSettings(0b1001010); //A0 = 0
-        //    try
-        //    {
-        //        foreach (var dev in i2cDevices)
-        //        {
-        //            ConfigTrace += "MAX44009 ID is ";
-        //            max44009 = await I2cDevice.FromIdAsync(dev.Id, i2cSettings);
-        //            ConfigTrace += max44009.DeviceId + Environment.NewLine;
-        //        }
-        //        foreach (var dev in pwmDevices)
-        //        {
-        //            pwmController = await PwmController.FromIdAsync(dev.Id);
-        //            ConfigTrace += "Default PWM: pin count " + pwmController.PinCount +
-        //                ", min frequency " + pwmController.MinFrequency + Environment.NewLine;
-        //            pwmController.SetDesiredFrequency(400);
-        //            pwmPin = pwmController.OpenPin(18);
-        //            pwmPin.Start();
-        //            ConfigTrace += "PWM pin 18 started: " + pwmPin.IsStarted.ToString();
-        //        }
-        //    }
-        //    catch (Exception exc)
-        //    {
-        //        Debug.WriteLine(exc.Message);
-        //    }
-        //}
-
+        var i2c = await DeviceInformation.FindAllAsync(I2cDevice.GetDeviceSelector());
+        max44009 = await I2cDevice.FromIdAsync(i2c[0].Id, new I2cConnectionSettings(0b1001010));
+        ConfigTrace += max44009 == null ? "none" : max44009.DeviceId + Environment.NewLine;
+        pca9685 = await I2cDevice.FromIdAsync(i2c[0].Id, new I2cConnectionSettings(0b1000000));
+        ConfigTrace += pca9685 == null ? "none" : pca9685.DeviceId + Environment.NewLine;
+        pca9685.Write(new byte[] { 0x00, 33 }); //Auto increment, clear sleep
+        await Task.Delay(1);
+        pca9685.Write(new byte[] { 0xFE, 41 }); //~145Hz
+        pca9685.Write(new byte[] { 0x00, 161 }); //Restart
+        pca9685.Write(new byte[] { 0xFA, 0, 0, 0, 0 });
+        _currentLvl = .1f;
+        SetDutyCycle();
     }
     /// <summary>
     /// Retrieves current lux value from MAX44009. Performs brightness correction (in auto mode)
@@ -475,17 +403,15 @@ public class BrightnessControl
             return;
         try
         {
-            max44009.WriteRead(command, result);
-            ushort lux = BitConverter.ToUInt16(result, 0);
-            Lux = (((lux >> 4) & 0xFF) << (lux >> 12)) * .045f;
+            max44009.WriteRead(new byte[] { 0x03 }, result);
+            byte msb = result[0];
+            max44009.WriteRead(new byte[] { 0x04 }, result);
+            Lux = (((byte)(msb << 4) | result[0]) << (msb >> 4)) * .045f;
             if (Mode == ControlMode.Auto)
             {
-                _tempLvl = _minLevel + Lux > 1 ? 
-                    (float)(Math.Log(MaxLux) * Math.Log(Lux)) / (1 - _minLevel) : 0;
-                if (_tempLvl > 1)
-                    _tempLvl = 1;
-                if (_tempLvl != _currentLvl)
-                    _timer.Change(TimeSpan.FromSeconds(0), TimeSpan.FromSeconds(1 / 30f));
+                _currentLvl = MinLevel + (Lux > 1 ? 
+                    (float)(Math.Log(Lux) * (1 - MinLevel) / Math.Log(MaxLux)) : 0);
+                SetDutyCycle();
             }
         }
         catch (Exception exc)
@@ -503,7 +429,7 @@ public class BrightnessControl
     /// </summary>
     public bool HWStatus
     {
-        get => (max44009 != null && pwmPin != null);
+        get => (max44009 != null && pca9685 != null);
     }
 }
 
@@ -520,7 +446,7 @@ public class RS485Dispatcher
     private long _ticksElapsed;
     private int _timeout, _fails;
     private bool _isRunning;
-    private object lockObj;
+    private readonly object lockObj;
 
     struct Stats
     {

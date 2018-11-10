@@ -73,6 +73,10 @@ namespace WindowsIoT
             rsLoad.Text = string.Format("RS485 load: {0} bps, {1}", 
                 s485Dispatcher.BusSpeed, s485Dispatcher.Statistics);
             LuxTLevel.Text = string.Format("Ambient light level: {0:F1}lux", brightnessControl.Lux);
+            BlTLevel.Text = brightnessControl.Level.ToString("P0");
+            if (brightnessControl.Mode == BrightnessControl.ControlMode.Auto)
+                BlLevel.Value = brightnessControl.Level * 100;
+            BlTMinLvl.Text = brightnessControl.MinLevel.ToString("P0");
         }
         private void C1StateRdy(SerialComm sender)
         {
@@ -99,7 +103,6 @@ namespace WindowsIoT
         private void BlLevel_ValueChanged(object sender, RangeBaseValueChangedEventArgs e)
         {
             brightnessControl.Level = (float)e.NewValue / 100f;
-            BlTLevel.Text = brightnessControl.Level.ToString("P0");
         }
 
         private void BlMinLvl_ValueChanged(object sender, RangeBaseValueChangedEventArgs e)
@@ -107,11 +110,11 @@ namespace WindowsIoT
             if (BlTMinLvl == null)
                 return;
             brightnessControl.MinLevel = (float)e.NewValue / 100f;
-            BlTMinLvl.Text = brightnessControl.MinLevel.ToString("P0");
         }
 
         private void AmbLuxMax_ValueChanged(object sender, RangeBaseValueChangedEventArgs e)
         {
+            if (AmbTLux == null) return;
             brightnessControl.MaxLux = 2050f - (float)(Math.Log(101 - e.NewValue) * 2000 / Math.Log(AmbLuxMax.Maximum));
             AmbTLux.Text = brightnessControl.MaxLux.ToString("F0") + "lux";
         }
