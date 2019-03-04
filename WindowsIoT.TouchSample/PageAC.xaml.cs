@@ -1,18 +1,9 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-using System.Runtime.InteropServices.WindowsRuntime;
-using Windows.Foundation;
-using Windows.Foundation.Collections;
-using Windows.UI.Core;
 using Windows.UI.Xaml;
 using Windows.UI.Xaml.Controls;
 using Windows.UI.Xaml.Controls.Primitives;
-using Windows.UI.Xaml.Data;
-using Windows.UI.Xaml.Input;
-using Windows.UI.Xaml.Media;
 using Windows.UI.Xaml.Navigation;
+using WindowsIoT.Communication;
 
 // The Blank Page item template is documented at https://go.microsoft.com/fwlink/?LinkId=234238
 
@@ -43,16 +34,16 @@ namespace WindowsIoT
         private void AirConfigRdy(SerialComm sender)
         {
             AirCondConfig config = sender as AirCondConfig;
-            minTT.Text = string.Format("{0:F1}°C", config.MinDeltaT);
-            maxTT.Text = string.Format("{0:F1}°C", config.MaxDeltaT);
-            minTrh.Text = string.Format("{0:F0}%", config.MinDeltaRH);
-            maxTrh.Text = string.Format("{0:F0}%", config.MaxDeltaRH);
+            minTT.Text = string.Format("{0:F1}°C", config.MinT);
+            maxTT.Text = string.Format("{0:F1}°C", config.MaxT);
+            minTrh.Text = string.Format("{0:F0}%", config.MinRH);
+            maxTrh.Text = string.Format("{0:F0}%", config.MaxRH);
             if (!refreshReq)
             {
-                config.MinDeltaT = (float)minT.Value;
-                config.MaxDeltaT = (float)maxT.Value;
-                config.MinDeltaRH = (float)minRH.Value;
-                config.MaxDeltaRH = (float)maxRH.Value;
+                config.MinT = (float)minT.Value;
+                config.MaxT = (float)maxT.Value;
+                config.MinRH = (float)minRH.Value;
+                config.MaxRH = (float)maxRH.Value;
                 config.FanLevel = (float)fanLvl.Value / 100;
             }
         }
@@ -65,10 +56,10 @@ namespace WindowsIoT
                 fanTlvl.Text = config.FanLevel >= .99f ? "Auto" : state.FanLevel.ToString("P0");
                 if (refreshReq)
                 {
-                    minT.Value = config.MinDeltaT;
-                    maxT.Value = config.MaxDeltaT;
-                    minRH.Value = config.MinDeltaRH;
-                    maxRH.Value = config.MaxDeltaRH;
+                    minT.Value = config.MinT;
+                    maxT.Value = config.MaxT;
+                    minRH.Value = config.MinRH;
+                    maxRH.Value = config.MaxRH;
                     fanLvl.Value = config.FanLevel >= .99f ? 100 : state.FanLevel * 100;
                     refreshReq = false;
                 }

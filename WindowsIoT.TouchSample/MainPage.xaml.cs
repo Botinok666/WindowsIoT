@@ -20,8 +20,10 @@ using Windows.UI.Xaml.Data;
 using Windows.UI.Xaml.Input;
 using Windows.UI.Xaml.Media;
 using Windows.UI.Xaml.Navigation;
+using WindowsIoT.Communication;
 
-// The Blank Page item template is documented at http://go.microsoft.com/fwlink/?LinkId=402352&clcid=0x409
+// The Blank Page item template is documented at 
+//http://go.microsoft.com/fwlink/?LinkId=402352&clcid=0x409
 
 namespace WindowsIoT
 {
@@ -51,7 +53,7 @@ namespace WindowsIoT
         {
             DateTime ntpTime = App.GetDateTime();
             homeDateTime.Content = (ntpTime.Year < 2018) ? "N/A" :
-                homeDateTime.Content = ntpTime.ToString("dddd d MMM H:mm:ss", DateTimeFormatInfo.InvariantInfo);
+                ntpTime.ToString("dddd d MMM H:mm:ss", DateTimeFormatInfo.InvariantInfo);
             
             rsUtil.Text = string.Format("{0} bps", s485Dispatcher.BusSpeed);
             s485Dispatcher.EnqueueItem(App.serialComm[1]); //AirCondState
@@ -68,12 +70,15 @@ namespace WindowsIoT
                 }
                 catch (FileNotFoundException)
                 {
-                    await CalibrateTouch(); //Initiate calibration if we don't have a calibration on file
+                    await CalibrateTouch(); //Initiate calibration
                 }
                 catch (UnauthorizedAccessException)
                 {
                     //No access to documents folder
-                    await new Windows.UI.Popups.MessageDialog("Make sure the application manifest specifies access to the documents folder and declares the file type association for the calibration file.", "Configuration Error").ShowAsync();
+                    await new Windows.UI.Popups.MessageDialog("Make sure the application " +
+                        "manifest specifies access to the documents folder and declares the " +
+                        "file type association for the calibration file.", 
+                        "Configuration Error").ShowAsync();
                     throw;
                 }
             }
@@ -88,15 +93,18 @@ namespace WindowsIoT
         }
         private async Task CalibrateTouch()
         {
-            var calibration = await TouchPanels.UI.LcdCalibrationView.CalibrateScreenAsync(tsc2046);
-            tsc2046.SetCalibration(calibration.A, calibration.B, calibration.C, calibration.D, calibration.E, calibration.F);
+            var calibration = await TouchPanels.UI
+                .LcdCalibrationView.CalibrateScreenAsync(tsc2046);
+            tsc2046.SetCalibration(calibration.A, calibration.B, calibration.C, 
+                calibration.D, calibration.E, calibration.F);
             try
             {
                 await tsc2046.SaveCalibrationAsync(CalibrationFilename);
             }
             catch (Exception ex)
             {
-                await new Windows.UI.Popups.MessageDialog(ex.Message, ex.Source).ShowAsync();
+                await new Windows.UI.Popups.MessageDialog(ex.Message, ex.Source)
+                    .ShowAsync();
             }
         }
         
@@ -110,18 +118,21 @@ namespace WindowsIoT
             {
                 new InjectedInputTouchInfo()
                 {
-                    Contact = new InjectedInputRectangle() { Bottom = 8,Top = 8,Left = 8, Right = 8},
+                    Contact = new InjectedInputRectangle()
+                    { Bottom = 8,Top = 8,Left = 8, Right = 8},
                     PointerInfo = new InjectedInputPointerInfo()
                     {
                         PointerId = _pID,
                         PixelLocation = new InjectedInputPoint()
                             { PositionX = (int)e.Position.X, PositionY = (int)e.Position.Y },
-                        PointerOptions = InjectedInputPointerOptions.InContact | InjectedInputPointerOptions.InRange |
+                        PointerOptions = InjectedInputPointerOptions.InContact | 
+                            InjectedInputPointerOptions.InRange |
                             InjectedInputPointerOptions.PointerDown,
                         TimeOffsetInMilliseconds = 0
                     },
                     Pressure = e.Pressure / 255f,
-                    TouchParameters = InjectedInputTouchParameters.Pressure | InjectedInputTouchParameters.Contact
+                    TouchParameters = InjectedInputTouchParameters.Pressure | 
+                        InjectedInputTouchParameters.Contact
                 }
             };
             _injector.InjectTouchInput(PDown);
@@ -132,18 +143,21 @@ namespace WindowsIoT
             {
                 new InjectedInputTouchInfo()
                 {
-                    Contact = new InjectedInputRectangle() { Bottom = 8,Top = 8,Left = 8, Right = 8},
+                    Contact = new InjectedInputRectangle()
+                    { Bottom = 8,Top = 8,Left = 8, Right = 8},
                     PointerInfo = new InjectedInputPointerInfo()
                     {
                         PointerId = _pID,
                         PixelLocation = new InjectedInputPoint()
                             { PositionX = (int)e.Position.X, PositionY = (int)e.Position.Y },
-                        PointerOptions = InjectedInputPointerOptions.InContact | InjectedInputPointerOptions.InRange |
+                        PointerOptions = InjectedInputPointerOptions.InContact | 
+                            InjectedInputPointerOptions.InRange |
                             InjectedInputPointerOptions.PointerDown,
                         TimeOffsetInMilliseconds = 0
                     },
                     Pressure = e.Pressure / 255f,
-                    TouchParameters = InjectedInputTouchParameters.Pressure | InjectedInputTouchParameters.Contact
+                    TouchParameters = InjectedInputTouchParameters.Pressure | 
+                        InjectedInputTouchParameters.Contact
                 }
             };
             _injector.InjectTouchInput(PMove);
@@ -167,14 +181,13 @@ namespace WindowsIoT
         private void AirStateRdy(SerialComm sender)
         {
             AirCondState acstate = sender as AirCondState;
-            blowerLvl.Content = (acstate.FanLevel > 0) ? acstate.FanLevel.ToString("P0") : "Off";
+            blowerLvl.Content = (acstate.FanLevel > 0) ? 
+                acstate.FanLevel.ToString("P0") : "Off";
             blowerFrp.Text = acstate.RPMFront.ToString();
             blowerRrp.Text = acstate.RPMRear.ToString();
             blowerIload.Text = string.Format("{0:G4}A", acstate.CurrentDraw);
             showerT.Text = string.Format("{0:G3}°C", acstate.InsideT);
             showerRH.Text = string.Format("{0:P1}", acstate.InsideRH);
-            kitchenT.Text = string.Format("{0:G3}°C", acstate.OutsideT);
-            kitchenRH.Text = string.Format("{0:P1}", acstate.OutsideRH);
         }
         private void C1StateRdy(SerialComm sender)
         {
@@ -185,7 +198,8 @@ namespace WindowsIoT
                 ((state.GetLinkLevel(1) > 0) ? state.GetLinkLevel(1).ToString("P0") : "Off");
             toiletLL.Content = !state.IsLinkValid(2) ? "N/C" :
                 ((state.GetLinkLevel(2) > 0) ? state.GetLinkLevel(2).ToString("P0") : "Off");
-            tableLL.Content = !state.IsLinkValid(3) ? "N/C" : ((state.GetLinkLevel(3) > 0) ? "On" : "Off");
+            tableLL.Content = !state.IsLinkValid(3) ? "N/C" : 
+                ((state.GetLinkLevel(3) > 0) ? "On" : "Off");
         }
         private void C2StateRdy(SerialComm sender)
         {
@@ -196,7 +210,8 @@ namespace WindowsIoT
                 ((state.GetLinkLevel(1) > 0) ? state.GetLinkLevel(1).ToString("P0") : "Off");
             corridorLL.Content = !state.IsLinkValid(2) ? "N/C" :
                 ((state.GetLinkLevel(2) > 0) ? state.GetLinkLevel(2).ToString("P0") : "Off");
-            showerLL.Content = !state.IsLinkValid(3) ? "N/C" : ((state.GetLinkLevel(3) > 0) ? "On" : "Off");
+            showerLL.Content = !state.IsLinkValid(3) ? "N/C" : 
+                ((state.GetLinkLevel(3) > 0) ? "On" : "Off");
             msenState.Text = state.MSenState;
         }
 

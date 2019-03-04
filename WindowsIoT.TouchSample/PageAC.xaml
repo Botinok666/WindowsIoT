@@ -131,19 +131,19 @@
                         <ColumnDefinition Width="6*"/>
                         <ColumnDefinition Width="1*"/>
                     </Grid.ColumnDefinitions>
-                    <TextBlock Grid.Row="0" Grid.Column="0" Text="Min. ΔT:"/>
-                    <TextBlock Grid.Row="1" Grid.Column="0" Text="Max. ΔT:"/>
-                    <TextBlock Grid.Row="2" Grid.Column="0" Text="Min. ΔRH:"/>
-                    <TextBlock Grid.Row="3" Grid.Column="0" Text="Max. ΔRH:"/>
+                    <TextBlock Grid.Row="0" Grid.Column="0" Text="Min. temp.:"/>
+                    <TextBlock Grid.Row="1" Grid.Column="0" Text="Max. temp.:"/>
+                    <TextBlock Grid.Row="2" Grid.Column="0" Text="Min. RH:"/>
+                    <TextBlock Grid.Row="3" Grid.Column="0" Text="Max. RH:"/>
                     <TextBlock Grid.Row="4" Grid.Column="0" Text="Fan level:"/>
 
-                    <Slider Grid.Row="0" Grid.Column="1" x:Name="minT" ValueChanged="MinT_ValueChanged" Minimum="2" Maximum="8" TickFrequency="1" StepFrequency="0.2"/>
+                    <Slider Grid.Row="0" Grid.Column="1" x:Name="minT" ValueChanged="MinT_ValueChanged" Minimum="22" Maximum="30" TickFrequency="1" StepFrequency="0.4"/>
                     <TextBlock Grid.Row="0" Grid.Column="2" Name="minTT" Text="2.0°C" FontSize="20%" VerticalAlignment="Center" HorizontalAlignment="Center"/>
-                    <Slider Grid.Row="1" Grid.Column="1" x:Name="maxT" ValueChanged="MaxT_ValueChanged" Minimum="4" Maximum="10" TickFrequency="1" StepFrequency="0.2"/>
+                    <Slider Grid.Row="1" Grid.Column="1" x:Name="maxT" ValueChanged="MaxT_ValueChanged" Minimum="26" Maximum="34" TickFrequency="1" StepFrequency="0.4"/>
                     <TextBlock Grid.Row="1" Grid.Column="2" Name="maxTT" Text="8.0°C" FontSize="20%" VerticalAlignment="Center" HorizontalAlignment="Center"/>
-                    <Slider Grid.Row="2" Grid.Column="1" x:Name="minRH" ValueChanged="MinRH_ValueChanged" Minimum="10" Maximum="40" TickFrequency="5" StepFrequency="1"/>
+                    <Slider Grid.Row="2" Grid.Column="1" x:Name="minRH" ValueChanged="MinRH_ValueChanged" Minimum="50" Maximum="80" TickFrequency="5" StepFrequency="1"/>
                     <TextBlock Grid.Row="2" Grid.Column="2" Name="minTrh" Text="20%" FontSize="20%" VerticalAlignment="Center" HorizontalAlignment="Center"/>
-                    <Slider Grid.Row="3" Grid.Column="1" x:Name="maxRH" ValueChanged="MaxRH_ValueChanged" Minimum="20" Maximum="50" TickFrequency="5" StepFrequency="1"/>
+                    <Slider Grid.Row="3" Grid.Column="1" x:Name="maxRH" ValueChanged="MaxRH_ValueChanged" Minimum="70" Maximum="100" TickFrequency="5" StepFrequency="1"/>
                     <TextBlock Grid.Row="3" Grid.Column="2" Name="maxTrh" Text="40%" FontSize="20%" VerticalAlignment="Center" HorizontalAlignment="Center"/>
                     <Slider Grid.Row="4" Grid.Column="1" x:Name="fanLvl" ValueChanged="FanLvl_ValueChanged" Minimum="0" Maximum="100" TickFrequency="20" StepFrequency="1"/>
                     <TextBlock Grid.Row="4" Grid.Column="2" Name="fanTlvl" Text="75%" FontSize="20%" VerticalAlignment="Center" HorizontalAlignment="Center"/>

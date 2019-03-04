@@ -8,13 +8,13 @@
     <Page.Resources>
         <Style TargetType="TextBlock">
             <Setter Property="Foreground" Value="AntiqueWhite"/>
-            <Setter Property="FontSize" Value="22%"/>
+            <Setter Property="FontSize" Value="25%"/>
             <Setter Property="Margin" Value="4"/>
             <Setter Property="VerticalAlignment" Value="Center"/>
             <Setter Property="Text" Value="N/A"/>
         </Style>
         <Style x:Key="IndigoStyle" TargetType="Button">
-            <Setter Property="FontSize" Value="30%"/>
+            <Setter Property="FontSize" Value="33%"/>
             <Setter Property="Foreground" Value="PeachPuff"/>
             <Setter Property="Background" Value="Indigo"/>
             <Setter Property="VerticalAlignment" Value="Stretch"/>
@@ -25,7 +25,7 @@
             <Setter Property="Content" Value="N/A"/>
         </Style>
         <Style TargetType="Button">
-            <Setter Property="FontSize" Value="30%"/>
+            <Setter Property="FontSize" Value="33%"/>
             <Setter Property="Foreground" Value="PeachPuff"/>
             <Setter Property="Background" Value="SlateBlue"/>
             <Setter Property="VerticalAlignment" Value="Stretch"/>
@@ -58,7 +58,7 @@
         <Border Grid.Row="0" Grid.RowSpan="4" Grid.Column="2" Grid.ColumnSpan="2" Background="ForestGreen"/>
         <Border Grid.Row="0" Grid.RowSpan="6" Grid.Column="0" Grid.ColumnSpan="2" Background="DodgerBlue"/>
 
-        <TextBlock Grid.Row="0" Grid.Column="0" Grid.ColumnSpan="2" Text="[1st floor lights]" FontWeight="SemiBold" FontSize="26%" Foreground="AntiqueWhite" TextAlignment="Center" VerticalAlignment="Center"/>
+        <TextBlock Grid.Row="0" Grid.Column="0" Grid.ColumnSpan="2" Text="[1st floor lights]" FontWeight="SemiBold" FontSize="28%" Foreground="AntiqueWhite" TextAlignment="Center" VerticalAlignment="Center"/>
         <TextBlock Grid.Row="1" Grid.Column="0" Text="Kitchen:" HorizontalTextAlignment="Right"/>
         <TextBlock Grid.Row="2" Grid.Column="0" Text="Table:" HorizontalTextAlignment="Right"/>
         <TextBlock Grid.Row="3" Grid.Column="0" Text="Shower:" HorizontalTextAlignment="Right"/>
@@ -73,7 +73,7 @@
 
         <Border Grid.Row="4" Grid.RowSpan="2" Grid.Column="2" Grid.ColumnSpan="2" Background="DarkGoldenrod"/>
 
-        <TextBlock Grid.Row="0" Grid.Column="2" Grid.ColumnSpan="2" Text="[2nd floor lights]" FontWeight="SemiBold" FontSize="26%" Foreground="AntiqueWhite" TextAlignment="Center" VerticalAlignment="Center"/>
+        <TextBlock Grid.Row="0" Grid.Column="2" Grid.ColumnSpan="2" Text="[2nd floor lights]" FontWeight="SemiBold" FontSize="28%" Foreground="AntiqueWhite" TextAlignment="Center" VerticalAlignment="Center"/>
         <TextBlock Grid.Row="1" Grid.Column="2" Text="Stairs:" HorizontalTextAlignment="Right"/>
         <TextBlock Grid.Row="2" Grid.Column="2" Text="Room B:" HorizontalTextAlignment="Right"/>
         <TextBlock Grid.Row="3" Grid.Column="2" Text="Room C:" HorizontalTextAlignment="Right"/>
@@ -82,39 +82,35 @@
         <Button Grid.Row="2" Grid.Column="3" x:Name="roombLL" Click="RoomBClick"/>
         <Button Grid.Row="3" Grid.Column="3" x:Name="roomcLL" Click="RoomCClick" Style="{StaticResource IndigoStyle}"/>
         
-        <TextBlock Grid.Row="4" Grid.Column="2" Grid.ColumnSpan="2" Text="[Stairs]" FontSize="26%" FontWeight="SemiBold" Foreground="Lavender" TextAlignment="Center"/>
+        <TextBlock Grid.Row="4" Grid.Column="2" Grid.ColumnSpan="2" Text="[Stairs]" FontSize="28%" FontWeight="SemiBold" Foreground="Lavender" TextAlignment="Center"/>
         <TextBlock Grid.Row="5" Grid.Column="2" Text="Sensor:" HorizontalTextAlignment="Right"/>
         <TextBlock Grid.Row="5" Grid.Column="3" x:Name="msenState" HorizontalAlignment="Center"/>
         
         <Border Grid.Row="0" Grid.RowSpan="6" Grid.Column="4" Grid.ColumnSpan="2" Background="Purple"/>
 
-        <TextBlock Grid.Row="0" Grid.Column="4" Grid.ColumnSpan="2" Text="[Shower]" FontSize="26%" FontWeight="SemiBold" Foreground="WhiteSmoke" TextAlignment="Center" VerticalAlignment="Center"/>
+        <TextBlock Grid.Row="0" Grid.Column="4" Grid.ColumnSpan="2" Text="[Shower]" FontSize="28%" FontWeight="SemiBold" Foreground="WhiteSmoke" TextAlignment="Center" VerticalAlignment="Center"/>
         <TextBlock Grid.Row="1" Grid.Column="4" Text="Cooler:" HorizontalTextAlignment="Right"/>
-        <StackPanel Grid.Row="2" Grid.RowSpan="4" Grid.Column="4" VerticalAlignment="Center" Spacing="3">
+        <StackPanel Grid.Row="2" Grid.RowSpan="4" Grid.Column="4" VerticalAlignment="Center" Spacing="9">
             <TextBlock Text="R. RPM:" HorizontalTextAlignment="Right"/>
             <TextBlock Text="F. RPM:" HorizontalTextAlignment="Right"/>
             <TextBlock Text="I(load):" HorizontalTextAlignment="Right"/>
-            <TextBlock Text="T(in):" HorizontalTextAlignment="Right"/>
-            <TextBlock Text="T(out):" HorizontalTextAlignment="Right"/>
-            <TextBlock Text="RH(in):" HorizontalTextAlignment="Right"/>
-            <TextBlock Text="RH(out):" HorizontalTextAlignment="Right"/>
+            <TextBlock Text="Temp.:" HorizontalTextAlignment="Right"/>
+            <TextBlock Text="RH:" HorizontalTextAlignment="Right"/>
         </StackPanel>
         <Button Grid.Row="1" Grid.Column="5" x:Name="blowerLvl" Click="BlowerConfigClick"/>
-        <StackPanel Grid.Row="2" Grid.RowSpan="4" Grid.Column="5" VerticalAlignment="Center" Spacing="3">
+        <StackPanel Grid.Row="2" Grid.RowSpan="4" Grid.Column="5" VerticalAlignment="Center" Spacing="9">
             <TextBlock x:Name="blowerFrp" HorizontalAlignment="Center"/>
             <TextBlock x:Name="blowerRrp" HorizontalAlignment="Center"/>
             <TextBlock x:Name="blowerIload" HorizontalAlignment="Center"/>
             <TextBlock x:Name="showerT" HorizontalAlignment="Center"/>
-            <TextBlock x:Name="kitchenT" HorizontalAlignment="Center"/>
             <TextBlock x:Name="showerRH" HorizontalAlignment="Center"/>
-            <TextBlock x:Name="kitchenRH" HorizontalAlignment="Center"/>
         </StackPanel>
 
         <Border Grid.Row="10" Grid.Column="0" Grid.ColumnSpan="2" Background="Blue"/>
 
         <TextBlock Grid.Row="10" Grid.Column="0" Text="RS485:" HorizontalTextAlignment="Right"/>
         <TextBlock Grid.Row="10" Grid.Column="1" x:Name="rsUtil" Text="0% load" HorizontalAlignment="Center"/>
-        <Button Grid.Row="10" Grid.Column="2" Grid.ColumnSpan="4" x:Name="homeDateTime" ClickMode="Release" Click="HomeDateTime_Click" FontWeight="Bold" Background="DimGray" Foreground="PaleTurquoise" Margin="0"/>
+        <Button Grid.Row="10" Grid.Column="2" Grid.ColumnSpan="4" x:Name="homeDateTime" Tapped="HomeDateTime_Click" FontWeight="Bold" Background="DimGray" Foreground="PaleTurquoise" Margin="0"/>
     </Grid>
 
 </Page>
