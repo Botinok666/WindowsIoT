@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.ObjectModel;
+using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices.WindowsRuntime;
@@ -34,9 +35,9 @@ namespace WindowsIoT
         ControllerConfig config = null;
         ControllerState state = null;
         ControllerChOnTime chOnTime = null;
-        DispatcherTimer dispatcher = new DispatcherTimer();
-        ObservableCollection<string> opmode = new ObservableCollection<string>();
-        RS485Dispatcher s485Dispatcher = RS485Dispatcher.GetInstance();
+        readonly DispatcherTimer dispatcher = new DispatcherTimer();
+        readonly ObservableCollection<string> opmode = new ObservableCollection<string>();
+        readonly RS485Dispatcher s485Dispatcher = RS485Dispatcher.GetInstance();
 
         public PageLC()
         {
@@ -50,7 +51,7 @@ namespace WindowsIoT
             opmode.Add("Always on");
             opmode.Add("Auto");
         }
-        private void GroupSLlvl_ValueChanged(object sender, RangeBaseValueChangedEventArgs e)
+        private void GroupSLlvl_ValueChanged(object _1, RangeBaseValueChangedEventArgs e)
         {
             if (lampaSLlvl == null)
                 return;
@@ -58,28 +59,28 @@ namespace WindowsIoT
             lampaSLlvl.Value = lampbSLlvl.Value = lampcSLlvl.Value = e.NewValue;
             changed = true;
         }
-        private void LampaSLlvl_ValueChanged(object sender, RangeBaseValueChangedEventArgs e)
+        private void LampaSLlvl_ValueChanged(object _1, RangeBaseValueChangedEventArgs _2)
         {
             if (sendConf == groupConf)
                 return;
             sendConf = aConf;
             changed = true;
         }
-        private void LampbSLlvl_ValueChanged(object sender, RangeBaseValueChangedEventArgs e)
+        private void LampbSLlvl_ValueChanged(object _1, RangeBaseValueChangedEventArgs _2)
         {
             if (sendConf == groupConf)
                 return;
             sendConf = bConf;
             changed = true;
         }
-        private void LampcSLlvl_ValueChanged(object sender, RangeBaseValueChangedEventArgs e)
+        private void LampcSLlvl_ValueChanged(object _1, RangeBaseValueChangedEventArgs _2)
         {
             if (sendConf == groupConf)
                 return;
             sendConf = cConf;
             changed = true;
         }
-        private void GroupSLminlvl_ValueChanged(object sender, RangeBaseValueChangedEventArgs e)
+        private void GroupSLminlvl_ValueChanged(object _1, RangeBaseValueChangedEventArgs e)
         {
             if (lampaSLminlvl == null)
                 return;
@@ -88,6 +89,8 @@ namespace WindowsIoT
         
         protected override void OnNavigatedTo(NavigationEventArgs e)
         {
+            if (e == null)
+                throw new ArgumentNullException(nameof(e), "Argument shouldn't be null");
             pivot.Title = e.Parameter as string;
             switch (e.Parameter as string)
             {
@@ -95,17 +98,17 @@ namespace WindowsIoT
                 case "Room A":
                 case "Toilet":
                 case "Table":
-                    config = App.SerialDevs[2] as ControllerConfig;
-                    state = App.SerialDevs[3] as ControllerState;
-                    chOnTime = App.SerialDevs[4] as ControllerChOnTime;
+                    config = App.SerialDevs[Enums.SerialEndpoint.LC1Config] as ControllerConfig;
+                    state = App.SerialDevs[Enums.SerialEndpoint.LC1State] as ControllerState;
+                    chOnTime = App.SerialDevs[Enums.SerialEndpoint.LC1GetOnTime] as ControllerChOnTime;
                     break;
                 case "Room B":
                 case "Room C":
                 case "Corridor":
                 case "Shower":
-                    config = App.SerialDevs[6] as ControllerConfig;
-                    state = App.SerialDevs[7] as ControllerState;
-                    chOnTime = App.SerialDevs[8] as ControllerChOnTime;
+                    config = App.SerialDevs[Enums.SerialEndpoint.LC2Config] as ControllerConfig;
+                    state = App.SerialDevs[Enums.SerialEndpoint.LC2State] as ControllerState;
+                    chOnTime = App.SerialDevs[Enums.SerialEndpoint.LC2GetOnTime] as ControllerChOnTime;
                     break;
             }
             switch (e.Parameter as string)
@@ -191,22 +194,23 @@ namespace WindowsIoT
         private void StateRdy(SerialComm sender)
         {
             float al = state.GetChLevel(chANum), bl = state.GetChLevel(chBNum), cl = state.GetChLevel(chCNum);
-            lampaTlvl.Text = (chANum != 8) ? al.ToString("P0") : (al > 0 ? "On" : "Off");
-            lampbTlvl.Text = bl.ToString("P0");
-            lampcTlvl.Text = cl.ToString("P0");
+            lampaTlvl.Text = (chANum != 8) ? 
+                al.ToString("P0", CultureInfo.InvariantCulture) : (al > 0 ? "On" : "Off");
+            lampbTlvl.Text = bl.ToString("P0", CultureInfo.InvariantCulture);
+            lampcTlvl.Text = cl.ToString("P0", CultureInfo.InvariantCulture);
             if (chBNum == 9 && 9 == chCNum) //Only one active channel
                 groupTlvl.Text = lampaTlvl.Text;
             else if (chCNum == 9) //Two active channels
             {
                 float x = .5f * (al + bl);
-                groupTlvl.Text = x.ToString("P0");
+                groupTlvl.Text = x.ToString("P0", CultureInfo.InvariantCulture);
                 if (Math.Abs(x - al) >= .01 || Math.Abs(x - bl) >= .01)
                     groupTlvl.Text += "⚠";
             }
             else
             {
                 float x = (al + bl + cl) / 3;
-                groupTlvl.Text = x.ToString("P0");
+                groupTlvl.Text = x.ToString("P0", CultureInfo.InvariantCulture);
                 if (Math.Abs(x - al) >= .01 || Math.Abs(x - bl) >= .01 || Math.Abs(x - cl) >= .01)
                     groupTlvl.Text += "⚠";
             }
@@ -225,32 +229,34 @@ namespace WindowsIoT
         private void ConfigRdy(SerialComm sender)
         {
             float am = config.MinLvlGet(chANum), bm = config.MinLvlGet(chBNum), cm = config.MinLvlGet(chCNum);
-            lampaTminLvl.Text = am.ToString("P0");
-            lampbTminLvl.Text = bm.ToString("P0");
-            lampcTminLvl.Text = cm.ToString("P0");
+            lampaTminLvl.Text = am.ToString("P0", CultureInfo.InvariantCulture);
+            lampbTminLvl.Text = bm.ToString("P0", CultureInfo.InvariantCulture);
+            lampcTminLvl.Text = cm.ToString("P0", CultureInfo.InvariantCulture);
             if (chBNum == 9 && 9 == chCNum) //Only one active channel
                 groupTminLvl.Text = lampaTminLvl.Text;
             else if (chCNum == 9) //Two active channels
             {
                 float y = .5f * (am + bm);
-                groupTminLvl.Text = y.ToString("P0");
+                groupTminLvl.Text = y.ToString("P0", CultureInfo.InvariantCulture);
                 if (Math.Abs(y - am) >= .01 || Math.Abs(y - bm) >= .01)
                     groupTminLvl.Text += "⚠";
             }
             else
             {
                 float y = (am + bm + cm) / 3;
-                groupTminLvl.Text = y.ToString("P0");
+                groupTminLvl.Text = y.ToString("P0", CultureInfo.InvariantCulture);
                 if (Math.Abs(y - am) >= .01 || Math.Abs(y - bm) >= .01 || Math.Abs(y - cm) >= .01)
                     groupTminLvl.Text += "⚠";
             }
-            groupTdelay.Text = string.Format("{0:F1}s", config.LinkDelayGet(linkNum));
-            groupTfr.Text = string.Format("{0:F0}%/s", config.FadeRateGet(linkNum));
+            groupTdelay.Text = string.Format(CultureInfo.InvariantCulture, 
+                "{0:F1}s", config.LinkDelayGet(linkNum));
+            groupTfr.Text = string.Format(CultureInfo.InvariantCulture, 
+                "{0:F0}%/s", config.FadeRateGet(linkNum));
             if (pivot.Items.Contains(msen))
             {
-                msenLL.Text = (config.MSenLowLvl / 255f).ToString("P0");
-                msenLT.Text = config.MSenLowTime.ToString() + 's';
-                msenOT.Text = config.MSenOnTime.ToString() + 's';
+                msenLL.Text = (config.MSenLowLvl / 255f).ToString("P0", CultureInfo.InvariantCulture);
+                msenLT.Text = config.MSenLowTime.ToString(CultureInfo.InvariantCulture) + 's';
+                msenOT.Text = config.MSenOnTime.ToString(CultureInfo.InvariantCulture) + 's';
             }
             if (refConfig)
             {
@@ -304,14 +310,20 @@ namespace WindowsIoT
         private void OnTimeRdy(SerialComm sender)
         {
             var timeSpan = TimeSpan.FromSeconds(chOnTime.GetOnTime(chANum));
-            lampaOT.Text = string.Format("{0}:{1:D2}", (int)timeSpan.TotalHours, timeSpan.Minutes);
-            lampaSC.Text = string.Format("{0} cycles", chOnTime.GetSwCount(chANum));
+            lampaOT.Text = string.Format(CultureInfo.InvariantCulture,
+                "{0}:{1:D2}", (int)timeSpan.TotalHours, timeSpan.Minutes);
+            lampaSC.Text = string.Format(CultureInfo.InvariantCulture,
+                "{0} cycles", chOnTime.GetSwCount(chANum));
             timeSpan = TimeSpan.FromSeconds(chOnTime.GetOnTime(chBNum));
-            lampbOT.Text = string.Format("{0}:{1:D2}", (int)timeSpan.TotalHours, timeSpan.Minutes);
-            lampbSC.Text = string.Format("{0} cycles", chOnTime.GetSwCount(chBNum));
+            lampbOT.Text = string.Format(CultureInfo.InvariantCulture,
+                "{0}:{1:D2}", (int)timeSpan.TotalHours, timeSpan.Minutes);
+            lampbSC.Text = string.Format(CultureInfo.InvariantCulture,
+                "{0} cycles", chOnTime.GetSwCount(chBNum));
             timeSpan = TimeSpan.FromSeconds(chOnTime.GetOnTime(chCNum));
-            lampcOT.Text = string.Format("{0}:{1:D2}", (int)timeSpan.TotalHours, timeSpan.Minutes);
-            lampcSC.Text = string.Format("{0} cycles", chOnTime.GetSwCount(chCNum));
+            lampcOT.Text = string.Format(CultureInfo.InvariantCulture,
+                "{0}:{1:D2}", (int)timeSpan.TotalHours, timeSpan.Minutes);
+            lampcSC.Text = string.Format(CultureInfo.InvariantCulture,
+                "{0} cycles", chOnTime.GetSwCount(chCNum));
         }
 
         private void Dispatcher_Tick(object sender, object e)
@@ -319,7 +331,7 @@ namespace WindowsIoT
             s485Dispatcher.EnqueueItem(chOnTime);
         }
 
-        private void Snm_BackRequested(object sender, RoutedEventArgs e)
+        private void Snm_BackRequested(object _1, RoutedEventArgs _2)
         {
             Frame.Navigate(typeof(MainPage));
         }

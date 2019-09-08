@@ -17,7 +17,7 @@ namespace TouchPanels
 	}
 	public sealed class TouchProcessor : DependencyObject, IDisposable
 	{
-		private ITouchDevice device;
+		private readonly ITouchDevice device;
         private CancellationTokenSource threadCancelSource = null;
 		private bool penPressed;
 

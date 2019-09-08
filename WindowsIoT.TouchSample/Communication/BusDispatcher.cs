@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices.WindowsRuntime;
@@ -15,7 +16,7 @@ using Windows.System.Threading;
 
 namespace WindowsIoT.Communication
 {
-    public class RS485Dispatcher
+    public sealed class RS485Dispatcher : IDisposable
     {
         private static RS485Dispatcher _instance = null;
         private SerialDevice serialPort;
@@ -53,23 +54,23 @@ namespace WindowsIoT.Communication
         private Stats _stats;
         private readonly Queue<Stats> _queue;
         public delegate void config();
-        private event config _ready;
+        private event config BusReady;
         public event config Ready
         {
             add
             {
-                if (_ready == null)
+                if (BusReady == null)
                 {
-                    _ready += value;
+                    BusReady += value;
                     UARTconnect();
                 }
                 else
-                    _ready += value;
+                    BusReady += value;
             }
             remove
             {
-                _ready -= value;
-                if (_ready == null)
+                BusReady -= value;
+                if (BusReady == null)
                     asyncAction?.Cancel();
             }
         }
@@ -114,7 +115,7 @@ namespace WindowsIoT.Communication
 
                 // Create the DataWriter object and attach to OutputStream
                 dataWriteObject = new DataWriter(serialPort.OutputStream);
-                _ready?.Invoke();
+                BusReady?.Invoke();
             }
             catch (Exception ex)
             {
@@ -170,6 +171,7 @@ namespace WindowsIoT.Communication
                 foreach (var j in _queue)
                     _stats += j;
                 string result = _stats.packets > 0 ? string.Format(
+                    CultureInfo.InvariantCulture,
                     "{0} fails, {1:P0} bad CRC, {2:P0} TX lost, {3:P0} RX lost", 
                     _fails,
                     _stats.badCRC / (float)_stats.packets, 
@@ -211,18 +213,18 @@ namespace WindowsIoT.Communication
                     bt += await serialPort.OutputStream.WriteAsync(
                         dataWriteObject.DetachBuffer());
                     dataWriteObject.WriteBytes(arr);
-                    await Task.Delay(TimeSpan.FromSeconds(1.0 / 6400));
+                    await Task.Delay(TimeSpan.FromSeconds(1.0 / 6400)).ConfigureAwait(true);
                     //Launch an async task to complete the write operation
                     bt += await serialPort.OutputStream.WriteAsync(
                         dataWriteObject.DetachBuffer());
-                    await Task.Delay(TimeSpan.FromMilliseconds(3));
+                    await Task.Delay(TimeSpan.FromMilliseconds(3)).ConfigureAwait(true);
                 }
                 crc = BitConverter.ToUInt16(arr, arr.Length - 2);
                 if (device.RxAddress != 0)
                 {
                     //Read data
                     dataWriteObject.WriteByte(device.RxAddress);
-                    await Task.Delay(TimeSpan.FromSeconds(1.0 / 6400));
+                    await Task.Delay(TimeSpan.FromSeconds(1.0 / 6400)).ConfigureAwait(true);
                     bt += await serialPort.OutputStream.WriteAsync(
                         dataWriteObject.DetachBuffer());
                     try
@@ -231,7 +233,7 @@ namespace WindowsIoT.Communication
                         buffer = new Windows.Storage.Streams.Buffer((uint)arr.Length);
                         arr = (await serialPort.InputStream.ReadAsync(
                             buffer, buffer.Capacity, InputStreamOptions.None)
-                            .AsTask(timeoutSource.Token)).ToArray();
+                            .AsTask(timeoutSource.Token).ConfigureAwait(true)).ToArray();
                         bt += (uint)arr.Length;
                         timeoutSource.Dispose();
                     }
@@ -251,7 +253,7 @@ namespace WindowsIoT.Communication
                 }
                 else
                 {
-                    byte result = await device.SetBuffer(arr);
+                    byte result = await device.SetBuffer(arr).ConfigureAwait(true);
                     if (result.Equals(1)) //CRC error
                     {
                         lock (lockObj)
@@ -266,5 +268,36 @@ namespace WindowsIoT.Communication
                 Interlocked.Add(ref _ticksElapsed, bt);
             }
         }
+
+        #region IDisposable Support
+        private bool disposedValue = false; // To detect redundant calls
+
+        void Dispose(bool disposing)
+        {
+            if (!disposedValue)
+            {
+                if (disposing)
+                {
+                    // TODO: dispose managed state (managed objects).
+                    dataWriteObject.Dispose();
+                    _ARE.Dispose();
+                }
+
+                // TODO: free unmanaged resources (unmanaged objects) and override a finalizer below.
+                // TODO: set large fields to null.
+
+                disposedValue = true;
+            }
+        }
+
+        // This code added to correctly implement the disposable pattern.
+        public void Dispose()
+        {
+            // Do not change this code. Put cleanup code in Dispose(bool disposing) above.
+            Dispose(true);
+            // TODO: uncomment the following line if the finalizer is overridden above.
+            // GC.SuppressFinalize(this);
+        }
+        #endregion
     }
 }

@@ -21,6 +21,7 @@ using Windows.UI.Xaml.Input;
 using Windows.UI.Xaml.Media;
 using Windows.UI.Xaml.Navigation;
 using WindowsIoT.Communication;
+using static WindowsIoT.Communication.Enums;
 
 // The Blank Page item template is documented at 
 //http://go.microsoft.com/fwlink/?LinkId=402352&clcid=0x409
@@ -54,7 +55,7 @@ namespace WindowsIoT
             DateTime ntpTime = App.GetDateTime();
             homeDateTime.Content = (ntpTime.Year < 2018) ? "N/A" :
                 ntpTime.ToString("dddd d MMM H:mm:ss", DateTimeFormatInfo.InvariantInfo);
-            s485Dispatcher.EnqueueItem(App.SerialDevs[1]); //AirCondState
+            s485Dispatcher.EnqueueItem(App.SerialDevs[SerialEndpoint.ShowerState]);
         }
 
         private async void Init()
@@ -188,22 +189,28 @@ namespace WindowsIoT
         {
             AirCondState acstate = sender as AirCondState;
             blowerLvl.Content = (acstate.FanLevel > 0) ? 
-                acstate.FanLevel.ToString("P0") : "Off";
-            blowerFrp.Text = acstate.RPMFront.ToString();
-            blowerRrp.Text = acstate.RPMRear.ToString();
-            blowerIload.Text = string.Format("{0:G4}A", acstate.CurrentDraw);
-            showerT.Text = string.Format("{0:G3}°C", acstate.InsideT);
-            showerRH.Text = string.Format("{0:P1}", acstate.InsideRH);
+                acstate.FanLevel.ToString("P0", CultureInfo.InvariantCulture) : "Off";
+            blowerFrp.Text = acstate.RPMFront.ToString(CultureInfo.InvariantCulture);
+            blowerRrp.Text = acstate.RPMRear.ToString(CultureInfo.InvariantCulture);
+            blowerIload.Text = string.Format(CultureInfo.InvariantCulture, 
+                "{0:G4}A", acstate.CurrentDraw);
+            showerT.Text = string.Format(CultureInfo.InvariantCulture, 
+                "{0:G3}°C", acstate.InsideT);
+            showerRH.Text = string.Format(CultureInfo.InvariantCulture, 
+                "{0:P1}", acstate.InsideRH);
         }
         private void C1StateRdy(SerialComm sender)
         {
             ControllerState state = sender as ControllerState;
             kitchenLL.Content = !state.IsLinkValid(0) ? "N/C" :
-                ((state.GetLinkLevel(0) > 0) ? state.GetLinkLevel(0).ToString("P0") : "Off");
+                ((state.GetLinkLevel(0) > 0) ? 
+                state.GetLinkLevel(0).ToString("P0", CultureInfo.InvariantCulture) : "Off");
             roomaLL.Content = !state.IsLinkValid(1) ? "N/C" :
-                ((state.GetLinkLevel(1) > 0) ? state.GetLinkLevel(1).ToString("P0") : "Off");
+                ((state.GetLinkLevel(1) > 0) ?
+                state.GetLinkLevel(1).ToString("P0", CultureInfo.InvariantCulture) : "Off");
             toiletLL.Content = !state.IsLinkValid(2) ? "N/C" :
-                ((state.GetLinkLevel(2) > 0) ? state.GetLinkLevel(2).ToString("P0") : "Off");
+                ((state.GetLinkLevel(2) > 0) ? 
+                state.GetLinkLevel(2).ToString("P0", CultureInfo.InvariantCulture) : "Off");
             tableLL.Content = !state.IsLinkValid(3) ? "N/C" : 
                 ((state.GetLinkLevel(3) > 0) ? "On" : "Off");
         }
@@ -211,11 +218,14 @@ namespace WindowsIoT
         {
             ControllerState state = sender as ControllerState;
             roombLL.Content = !state.IsLinkValid(0) ? "N/C" :
-                ((state.GetLinkLevel(0) > 0) ? state.GetLinkLevel(0).ToString("P0") : "Off");
+                ((state.GetLinkLevel(0) > 0) ? 
+                state.GetLinkLevel(0).ToString("P0", CultureInfo.InvariantCulture) : "Off");
             roomcLL.Content = !state.IsLinkValid(1) ? "N/C" :
-                ((state.GetLinkLevel(1) > 0) ? state.GetLinkLevel(1).ToString("P0") : "Off");
+                ((state.GetLinkLevel(1) > 0) ? 
+                state.GetLinkLevel(1).ToString("P0", CultureInfo.InvariantCulture) : "Off");
             corridorLL.Content = !state.IsLinkValid(2) ? "N/C" :
-                ((state.GetLinkLevel(2) > 0) ? state.GetLinkLevel(2).ToString("P0") : "Off");
+                ((state.GetLinkLevel(2) > 0) ? 
+                state.GetLinkLevel(2).ToString("P0", CultureInfo.InvariantCulture) : "Off");
             showerLL.Content = !state.IsLinkValid(3) ? "N/C" : 
                 ((state.GetLinkLevel(3) > 0) ? "On" : "Off");
             msenState.Text = state.MSenState;
@@ -224,57 +234,57 @@ namespace WindowsIoT
         protected override void OnNavigatedTo(NavigationEventArgs e)
         {
             dispatcher1s.Start();
-            App.SerialDevs[1].DataReady += AirStateRdy;
-            App.SerialDevs[3].DataReady += C1StateRdy; //These two should be enqueued from main
-            App.SerialDevs[7].DataReady += C2StateRdy;
+            App.SerialDevs[SerialEndpoint.ShowerState].DataReady += AirStateRdy;
+            App.SerialDevs[SerialEndpoint.LC1State].DataReady += C1StateRdy; //These two should be enqueued from main
+            App.SerialDevs[SerialEndpoint.LC2State].DataReady += C2StateRdy;
             base.OnNavigatedTo(e);
         }
         protected override void OnNavigatingFrom(NavigatingCancelEventArgs e)
         {
             dispatcher1s.Stop();
-            App.SerialDevs[1].DataReady -= AirStateRdy;
-            App.SerialDevs[3].DataReady -= C1StateRdy;
-            App.SerialDevs[7].DataReady -= C2StateRdy;
+            App.SerialDevs[SerialEndpoint.ShowerState].DataReady -= AirStateRdy;
+            App.SerialDevs[SerialEndpoint.LC1State].DataReady -= C1StateRdy;
+            App.SerialDevs[SerialEndpoint.LC2State].DataReady -= C2StateRdy;
             base.OnNavigatingFrom(e);
         }
 
-        private void BlowerConfigClick(object sender, RoutedEventArgs e)
+        private void BlowerConfigClick(object _1, RoutedEventArgs _2)
         {
             Frame.Navigate(typeof(PageAC));
         }
-        private void KitchenClick(object sender, RoutedEventArgs e)
+        private void KitchenClick(object _1, RoutedEventArgs _2)
         {
             Frame.Navigate(typeof(PageLC), "Kitchen");
         }
-        private void TableClick(object sender, RoutedEventArgs e)
+        private void TableClick(object _1, RoutedEventArgs _2)
         {
             Frame.Navigate(typeof(PageLC), "Table");
         }
-        private void ShowerClick(object sender, RoutedEventArgs e)
+        private void ShowerClick(object _1, RoutedEventArgs _2)
         {
             Frame.Navigate(typeof(PageLC), "Shower");
         }
-        private void ToiletClick(object sender, RoutedEventArgs e)
+        private void ToiletClick(object _1, RoutedEventArgs _2)
         {
             Frame.Navigate(typeof(PageLC), "Toilet");
         }
-        private void RoomAClick(object sender, RoutedEventArgs e)
+        private void RoomAClick(object _1, RoutedEventArgs _2)
         {
             Frame.Navigate(typeof(PageLC), "Room A");
         }
-        private void HomeDateTime_Click(object sender, RoutedEventArgs e)
+        private void HomeDateTime_Click(object _1, RoutedEventArgs _2)
         {
             Frame.Navigate(typeof(TimeInfo));
         }
-        private void CorridorClick(object sender, RoutedEventArgs e)
+        private void CorridorClick(object _1, RoutedEventArgs _2)
         {
             Frame.Navigate(typeof(PageLC), "Corridor");
         }
-        private void RoomBClick(object sender, RoutedEventArgs e)
+        private void RoomBClick(object _1, RoutedEventArgs _2)
         {
             Frame.Navigate(typeof(PageLC), "Room B");
         }
-        private void RoomCClick(object sender, RoutedEventArgs e)
+        private void RoomCClick(object _1, RoutedEventArgs _2)
         {
             Frame.Navigate(typeof(PageLC), "Room C");
         }

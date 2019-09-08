@@ -9,9 +9,9 @@ namespace WindowsIoT.Communication
 {
     public abstract class SerialComm : DependencyObject
     {
-        protected byte[] buffer;
+        protected byte[] buffer { get; set; }
         private bool _bv;
-        protected object lockObj;
+        protected object LockObj { get; set; }
         public delegate void DRDY(SerialComm sender);
         public event DRDY DataReady;
         /// <summary>
@@ -38,7 +38,7 @@ namespace WindowsIoT.Communication
             int crc = 0xFFFF;
             for (int o = 0; o < arr.Length - 2; o++)
             {
-                crc = crc ^ (arr[o] << 8);
+                crc ^= arr[o] << 8;
                 for (int i = 0; i < 8; i++)
                 {
                     if ((crc & 0x8000) != 0)
@@ -58,7 +58,7 @@ namespace WindowsIoT.Communication
             set
             {
                 if (!value)
-                    lock (lockObj)
+                    lock (LockObj)
                         _bv = value;
             }
         }
@@ -69,7 +69,7 @@ namespace WindowsIoT.Communication
         public byte[] GetBuffer()
         {
             byte[] result = new byte[buffer.Length];
-            lock (lockObj)
+            lock (LockObj)
             {
                 Array.Copy(buffer, result, buffer.Length - 2);
                 BitConverter.GetBytes(CRC16(result)).CopyTo(result, result.Length - 2);
@@ -84,7 +84,7 @@ namespace WindowsIoT.Communication
         public async Task<byte> SetBuffer(byte[] value)
         {
             byte result = 0;
-            lock (lockObj)
+            lock (LockObj)
             {
                 _bv = false;
                 if (value != null && value.Length == buffer.Length)
@@ -107,7 +107,7 @@ namespace WindowsIoT.Communication
         }
         public override bool Equals(object obj)
         {
-            if (obj is SerialComm)
+            if (obj is SerialComm && obj != null)
                 return ((obj as SerialComm).RxAddress == RxAddress) & ((obj as SerialComm).TxAddress == TxAddress);
             return false;
         }
@@ -123,7 +123,7 @@ namespace WindowsIoT.Communication
         public ControllerConfig(byte rxAddr, byte txAddr)
         {
             buffer = new byte[26];
-            lockObj = new object();
+            LockObj = new object();
             RxAddress = rxAddr;
             TxAddress = txAddr;
             MSenAuto = true;
@@ -148,7 +148,7 @@ namespace WindowsIoT.Communication
         {
             if (channel > 7)
                 return;
-            lock (lockObj)
+            lock (LockObj)
                 buffer[channel] = value;
         }
         /// <summary>
@@ -158,7 +158,7 @@ namespace WindowsIoT.Communication
         /// <param name="val">Brightness level, range [0;255]</param>
         public void OverrideLvlSet(byte[] channels, byte val)
         {
-            lock (lockObj)
+            lock (LockObj)
             {
                 buffer[8] = val;
                 buffer[9] = 0; //Override mask
@@ -188,7 +188,7 @@ namespace WindowsIoT.Communication
         {
             if (link > 3)
                 return;
-            lock (lockObj)
+            lock (LockObj)
                 buffer[10 + link] = value;
         }
         public float LinkDelayGet(byte link)
@@ -201,7 +201,7 @@ namespace WindowsIoT.Communication
         {
             if (link > 3)
                 return;
-            lock (lockObj)
+            lock (LockObj)
                 buffer[14 + link] = value;
         }
         public bool MSenAuto { get; set; }
@@ -209,7 +209,7 @@ namespace WindowsIoT.Communication
         {
             set
             {
-                lock (lockObj)
+                lock (LockObj)
                 {
                     if (value)
                         buffer[18] = _mSenOt;
@@ -224,7 +224,7 @@ namespace WindowsIoT.Communication
             get => _mSenOt;
             set
             {
-                lock (lockObj)
+                lock (LockObj)
                 {
                     if (buffer[18].Equals(_mSenOt))
                         buffer[18] = value;
@@ -237,7 +237,7 @@ namespace WindowsIoT.Communication
             get => buffer[19];
             set
             {
-                lock (lockObj)
+                lock (LockObj)
                     buffer[19] = value;
             }
         }
@@ -246,7 +246,7 @@ namespace WindowsIoT.Communication
             get => buffer[20];
             set
             {
-                lock (lockObj)
+                lock (LockObj)
                     buffer[20] = value;
             }
         }
@@ -255,13 +255,13 @@ namespace WindowsIoT.Communication
             get => buffer[21];
             set
             {
-                lock (lockObj)
+                lock (LockObj)
                     buffer[21] = value;
             }
         }
         public void SetConfig(bool saveToNvm)
         {
-            lock (lockObj)
+            lock (LockObj)
                 buffer[22] = (byte)(saveToNvm ? (1 << 3) : 0);
         }
         public int RTCCorrect //Value in ppm, sign-and-magnitude representation
@@ -273,7 +273,7 @@ namespace WindowsIoT.Communication
                     value = -127;
                 else if (value > 127)
                     value = 127;
-                lock (lockObj)
+                lock (LockObj)
                     buffer[23] = value < 0 ? (byte)((-value) | 0x80) : (byte)value;
             }
         }
@@ -283,7 +283,7 @@ namespace WindowsIoT.Communication
         public ControllerOTSet(byte rxAddr, byte txAddr)
         {
             buffer = new byte[26];
-            lockObj = new object();
+            LockObj = new object();
             RxAddress = rxAddr;
             TxAddress = txAddr;
         }
@@ -291,7 +291,7 @@ namespace WindowsIoT.Communication
         {
             if (channel > 8)
                 return;
-            lock (lockObj)
+            lock (LockObj)
             {
                 BitConverter.GetBytes(onTime).CopyTo(buffer, 0);
                 BitConverter.GetBytes(swCnt).CopyTo(buffer, 10);
@@ -305,7 +305,7 @@ namespace WindowsIoT.Communication
         public ControllerState(byte rxAddr, byte txAddr)
         {
             buffer = new byte[25];
-            lockObj = new object();
+            LockObj = new object();
             RxAddress = rxAddr;
             TxAddress = txAddr;
         }
@@ -352,7 +352,7 @@ namespace WindowsIoT.Communication
         public ControllerChOnTime(byte rxAddr, byte txAddr)
         {
             buffer = new byte[56];
-            lockObj = new object();
+            LockObj = new object();
             RxAddress = rxAddr;
             TxAddress = txAddr;
         }
@@ -375,7 +375,7 @@ namespace WindowsIoT.Communication
         public AirCondConfig(byte rxAddr, byte txAddr)
         {
             buffer = new byte[11];
-            lockObj = new object();
+            LockObj = new object();
             RxAddress = rxAddr;
             TxAddress = txAddr;
         }
@@ -384,7 +384,7 @@ namespace WindowsIoT.Communication
             get => buffer[0] / 147f;
             set
             {
-                lock (lockObj)
+                lock (LockObj)
                 {
                     if (value < 0)
                         buffer[0] = 0;
@@ -400,7 +400,7 @@ namespace WindowsIoT.Communication
             get => BitConverter.ToInt16(buffer, 1) / 10f;
             set
             {
-                lock (lockObj)
+                lock (LockObj)
                     BitConverter.GetBytes((short)(value * 10)).CopyTo(buffer, 1);
             }
         }
@@ -409,7 +409,7 @@ namespace WindowsIoT.Communication
             get => (BitConverter.ToInt16(buffer, 3) + BitConverter.ToInt16(buffer, 1)) / 10f;
             set
             {
-                lock (lockObj)
+                lock (LockObj)
                     BitConverter.GetBytes((short)(value * 10 - BitConverter.ToInt16(buffer, 1))).CopyTo(buffer, 3);
             }
         }
@@ -418,7 +418,7 @@ namespace WindowsIoT.Communication
             get => BitConverter.ToInt16(buffer, 5) / 10f;
             set
             {
-                lock (lockObj)
+                lock (LockObj)
                     BitConverter.GetBytes((short)(value * 10)).CopyTo(buffer, 5);
             }
         }
@@ -427,7 +427,7 @@ namespace WindowsIoT.Communication
             get => (BitConverter.ToInt16(buffer, 7) + BitConverter.ToInt16(buffer, 5)) / 10f;
             set
             {
-                lock (lockObj)
+                lock (LockObj)
                     BitConverter.GetBytes((short)(value * 10 - BitConverter.ToInt16(buffer, 5))).CopyTo(buffer, 7);
             }
         }
@@ -437,7 +437,7 @@ namespace WindowsIoT.Communication
         public AirCondState(byte rxAddr, byte txAddr)
         {
             buffer = new byte[17];
-            lockObj = new object();
+            LockObj = new object();
             RxAddress = rxAddr;
             TxAddress = txAddr;
         }

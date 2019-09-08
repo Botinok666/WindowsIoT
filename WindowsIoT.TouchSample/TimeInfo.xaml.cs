@@ -17,6 +17,8 @@ using Windows.UI.Xaml.Navigation;
 using WindowsIoT.Communication;
 using WindowsIoT.Util;
 
+using static WindowsIoT.Communication.Enums;
+
 // The Blank Page item template is documented at https://go.microsoft.com/fwlink/?LinkId=234238
 
 namespace WindowsIoT
@@ -58,8 +60,8 @@ namespace WindowsIoT
                 SolarTime.CurrentDate = dateTime.AddDays(1);
                 sEvVal.Text = SolarTime.Sunrise.ToString("H:mm:ss", DateTimeFormatInfo.InvariantInfo);
             }
-            App.SerialDevs[3].DataReady += C1StateRdy;
-            App.SerialDevs[7].DataReady += C2StateRdy;
+            App.SerialDevs[SerialEndpoint.LC1State].DataReady += C1StateRdy;
+            App.SerialDevs[SerialEndpoint.LC2State].DataReady += C2StateRdy;
             RegModeSw.IsOn = brightnessControl.Mode == BrightnessControl.ControlMode.Auto;
             BlLevel.Value = brightnessControl.Level * 100;
             BlMinLvl.Value = brightnessControl.MinLevel * 100;
@@ -77,31 +79,43 @@ namespace WindowsIoT
         {
             TimeSpan timeSpan = App.SyncTimeSpan();
             ntpSync.Text = timeSpan.Equals(TimeSpan.FromDays(365)) ? "N/A" :
-                string.Format("{0}:{1:D2}:{2:D2}", (int)timeSpan.TotalHours, timeSpan.Minutes, timeSpan.Seconds);
+                string.Format(CultureInfo.InvariantCulture,
+                    "{0}:{1:D2}:{2:D2}", 
+                    (int)timeSpan.TotalHours, timeSpan.Minutes, timeSpan.Seconds);
             rsLoad.Text = "RS485: " + s485Dispatcher.Statistics;
-            LuxTLevel.Text = string.Format("Ambient light level: {0:F1}lux", brightnessControl.Lux);
-            BlTLevel.Text = brightnessControl.Level.ToString("P0");
+            LuxTLevel.Text = string.Format(CultureInfo.InvariantCulture,
+                "Ambient light level: {0:F1}lux", 
+                brightnessControl.Lux);
+            BlTLevel.Text = brightnessControl.Level.ToString("P0", CultureInfo.InvariantCulture);
             if (brightnessControl.Mode == BrightnessControl.ControlMode.Auto)
                 BlLevel.Value = brightnessControl.Level * 100;
-            BlTMinLvl.Text = brightnessControl.MinLevel.ToString("P0");
+            BlTMinLvl.Text = brightnessControl.MinLevel.ToString("P0", CultureInfo.InvariantCulture);
         }
         private void C1StateRdy(SerialComm sender)
         {
             TimeSpan timeSpan = TimeSpan.FromSeconds((sender as ControllerState).Tick / 32.0);
-            lc1Ot.Text = string.Format("{0}:{1:D2}:{2:D2}", (int)timeSpan.TotalHours, timeSpan.Minutes, timeSpan.Seconds);
-            lc1ppm.Text = string.Format("{0} ppm", (App.SerialDevs[2] as ControllerConfig).RTCCorrect);
+            lc1Ot.Text = string.Format(CultureInfo.InvariantCulture,
+                "{0}:{1:D2}:{2:D2}", 
+                (int)timeSpan.TotalHours, timeSpan.Minutes, timeSpan.Seconds);
+            lc1ppm.Text = string.Format(CultureInfo.InvariantCulture,
+                "{0} ppm", 
+                (App.SerialDevs[SerialEndpoint.LC1Config] as ControllerConfig).RTCCorrect);
         }
         private void C2StateRdy(SerialComm sender)
         {
             TimeSpan timeSpan = TimeSpan.FromSeconds((sender as ControllerState).Tick / 32.0);
-            lc2Ot.Text = string.Format("{0}:{1:D2}:{2:D2}", (int)timeSpan.TotalHours, timeSpan.Minutes, timeSpan.Seconds);
-            lc2ppm.Text = string.Format("{0} ppm", (App.SerialDevs[6] as ControllerConfig).RTCCorrect);
+            lc2Ot.Text = string.Format(CultureInfo.InvariantCulture,
+                "{0}:{1:D2}:{2:D2}", 
+                (int)timeSpan.TotalHours, timeSpan.Minutes, timeSpan.Seconds);
+            lc2ppm.Text = string.Format(CultureInfo.InvariantCulture,
+                "{0} ppm", 
+                (App.SerialDevs[SerialEndpoint.LC2Config] as ControllerConfig).RTCCorrect);
         }
         protected override void OnNavigatingFrom(NavigatingCancelEventArgs e)
         {
             timer.Stop();
-            App.SerialDevs[3].DataReady -= C1StateRdy;
-            App.SerialDevs[7].DataReady -= C2StateRdy;
+            App.SerialDevs[SerialEndpoint.LC1State].DataReady -= C1StateRdy;
+            App.SerialDevs[SerialEndpoint.LC2State].DataReady -= C2StateRdy;
             base.OnNavigatingFrom(e);
         }
         private void Snm_BackRequested(object _1, RoutedEventArgs _2)
@@ -125,13 +139,13 @@ namespace WindowsIoT
         {
             if (AmbTLux == null) return;
             brightnessControl.MaxLux = 2050f - (float)(Math.Log(101 - e.NewValue) * 2000 / Math.Log(AmbLuxMax.Maximum));
-            AmbTLux.Text = brightnessControl.MaxLux.ToString("F0") + "lux";
+            AmbTLux.Text = brightnessControl.MaxLux.ToString("F0", CultureInfo.InvariantCulture) + "lux";
         }
 
         private async void LuxTLevel_Tapped(object _1, TappedRoutedEventArgs _2)
         {
             await new Windows.UI.Popups.MessageDialog(brightnessControl.ConfigTrace, 
-                "HW state: " + brightnessControl.HWStatus.ToString()).ShowAsync();
+                "HW state: " + brightnessControl.HWStatus.ToString(CultureInfo.InvariantCulture)).ShowAsync();
         }
 
         private void RegModeSw_Toggled(object _1, RoutedEventArgs _2)

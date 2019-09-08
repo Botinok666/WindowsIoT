@@ -106,6 +106,7 @@
       <DependentUpon>App.xaml</DependentUpon>
     </Compile>
     <Compile Include="Communication\BusDispatcher.cs" />
+    <Compile Include="Communication\Enums.cs" />
     <Compile Include="Communication\SerialComm.cs" />
     <Compile Include="MainPage.xaml.cs">
       <DependentUpon>MainPage.xaml</DependentUpon>
@@ -211,6 +212,9 @@
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
+    <PackageReference Include="Microsoft.CodeAnalysis.FxCopAnalyzers">
+      <Version>2.9.3</Version>
+    </PackageReference>
     <PackageReference Include="Microsoft.IoT.Devices">
       <Version>1.0.8</Version>
     </PackageReference>

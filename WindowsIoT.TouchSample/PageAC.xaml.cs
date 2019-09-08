@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Globalization;
 using Windows.UI.Xaml;
 using Windows.UI.Xaml.Controls;
 using Windows.UI.Xaml.Controls.Primitives;
@@ -25,18 +26,18 @@ namespace WindowsIoT
         }
         private void Timer_Tick(object sender, object e)
         {
-            s485Dispatcher.EnqueueItem(App.SerialDevs[0]);
-            s485Dispatcher.EnqueueItem(App.SerialDevs[1]);
+            s485Dispatcher.EnqueueItem(App.SerialDevs[Enums.SerialEndpoint.ShowerConfig]);
+            s485Dispatcher.EnqueueItem(App.SerialDevs[Enums.SerialEndpoint.ShowerState]);
             rsLoad.Text = "RS485: " + s485Dispatcher.Statistics;
         }
         
         private void AirConfigRdy(SerialComm sender)
         {
             AirCondConfig config = sender as AirCondConfig;
-            minTT.Text = string.Format("{0:F1}°C", config.MinT);
-            maxTT.Text = string.Format("{0:F1}°C", config.MaxT);
-            minTrh.Text = string.Format("{0:F0}%", config.MinRH);
-            maxTrh.Text = string.Format("{0:F0}%", config.MaxRH);
+            minTT.Text = string.Format(CultureInfo.InvariantCulture, "{0:F1}°C", config.MinT);
+            maxTT.Text = string.Format(CultureInfo.InvariantCulture, "{0:F1}°C", config.MaxT);
+            minTrh.Text = string.Format(CultureInfo.InvariantCulture, "{0:F0}%", config.MinRH);
+            maxTrh.Text = string.Format(CultureInfo.InvariantCulture, "{0:F0}%", config.MaxRH);
             if (!refreshReq)
             {
                 config.MinT = (float)minT.Value;
@@ -52,7 +53,8 @@ namespace WindowsIoT
             AirCondState state = sender as AirCondState;
             if (config.IsBufferValid)
             {
-                fanTlvl.Text = config.FanLevel >= .99f ? "Auto" : state.FanLevel.ToString("P0");
+                fanTlvl.Text = config.FanLevel >= .99f ? 
+                    "Auto" : state.FanLevel.ToString("P0", CultureInfo.InvariantCulture);
                 if (refreshReq)
                 {
                     minT.Value = config.MinT;
@@ -67,8 +69,8 @@ namespace WindowsIoT
 
         protected override void OnNavigatedTo(NavigationEventArgs e)
         {
-            App.SerialDevs[0].DataReady += AirConfigRdy;
-            App.SerialDevs[1].DataReady += AirStateRdy;
+            App.SerialDevs[Enums.SerialEndpoint.ShowerConfig].DataReady += AirConfigRdy;
+            App.SerialDevs[Enums.SerialEndpoint.ShowerState].DataReady += AirStateRdy;
             s485Dispatcher.EnqueueItem(App.SerialDevs[0]);
             refreshReq = true;
             timer.Start();
@@ -77,8 +79,8 @@ namespace WindowsIoT
         protected override void OnNavigatingFrom(NavigatingCancelEventArgs e)
         {
             timer.Stop();
-            App.SerialDevs[0].DataReady -= AirConfigRdy;
-            App.SerialDevs[1].DataReady -= AirStateRdy;
+            App.SerialDevs[Enums.SerialEndpoint.ShowerConfig].DataReady -= AirConfigRdy;
+            App.SerialDevs[Enums.SerialEndpoint.ShowerState].DataReady -= AirStateRdy;
             base.OnNavigatingFrom(e);
         }
         private void Snm_BackRequested(object _1, RoutedEventArgs _2)
@@ -102,7 +104,7 @@ namespace WindowsIoT
                 minT.Value = e.NewValue - 2;
         }
 
-        private void MinRH_ValueChanged(object sender, RangeBaseValueChangedEventArgs e)
+        private void MinRH_ValueChanged(object _1, RangeBaseValueChangedEventArgs e)
         {
             if (maxRH == null)
                 return;

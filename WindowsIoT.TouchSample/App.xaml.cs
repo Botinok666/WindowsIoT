@@ -24,13 +24,14 @@ using Windows.UI.Xaml.Input;
 using Windows.UI.Xaml.Media;
 using Windows.UI.Xaml.Navigation;
 using WindowsIoT.Communication;
+using static WindowsIoT.Communication.Enums;
 
 namespace WindowsIoT
 {
     /// <summary>
     /// Provides application-specific behavior to supplement the default Application class.
     /// </summary>
-    public sealed partial class App : Application
+    public sealed partial class App : Application, IDisposable
     {
         /// <summary>
         /// Initializes the singleton application object.  This is the first line of authored code
@@ -50,7 +51,7 @@ namespace WindowsIoT
         //private Semaphore dispatcherS = null;
         private readonly RS485Dispatcher s485Dispatcher = null;
         //All external RS485 devices are here
-        static public SerialComm[] SerialDevs { get; private set; }
+        static public Dictionary<SerialEndpoint, SerialComm> SerialDevs { get; private set; }
         //Brightness control maintained here
         private readonly Util.BrightnessControl brightness = null;
 
@@ -68,16 +69,21 @@ namespace WindowsIoT
         {
             InitializeComponent();
             
-            SerialDevs = new SerialComm[] {
-                new AirCondConfig(0x12, 0x13), new AirCondState(0x11, 0),
-                new ControllerConfig(0x22, 0x23), new ControllerState(0x21, 0),
-                new ControllerChOnTime(0x24, 0), new ControllerOTSet(0, 0x23),
-                new ControllerConfig(0x32, 0x33), new ControllerState(0x31, 0),
-                new ControllerChOnTime(0x34, 0), new ControllerOTSet(0, 0x33) };
-            SerialDevs[3].DataReady += Controller1State;
-            SerialDevs[7].DataReady += Controller2State;
-            SerialDevs[2].DataReady += Controller1Config;
-            SerialDevs[6].DataReady += Controller2Config;
+            SerialDevs = new Dictionary<SerialEndpoint, SerialComm> {
+                { SerialEndpoint.ShowerConfig, new AirCondConfig(0x12, 0x13) },
+                { SerialEndpoint.ShowerState, new AirCondState(0x11, 0) },
+                { SerialEndpoint.LC1Config, new ControllerConfig(0x22, 0x23) },
+                { SerialEndpoint.LC1State, new ControllerState(0x21, 0) },
+                { SerialEndpoint.LC1GetOnTime, new ControllerChOnTime(0x24, 0) },
+                { SerialEndpoint.LC1SetOnTime, new ControllerOTSet(0, 0x23) },
+                { SerialEndpoint.LC2Config, new ControllerConfig(0x32, 0x33) },
+                { SerialEndpoint.LC2State, new ControllerState(0x31, 0) },
+                { SerialEndpoint.LC2GetOnTime, new ControllerChOnTime(0x34, 0) },
+                { SerialEndpoint.LC2SetOnTime, new ControllerOTSet(0, 0x33) } };
+            SerialDevs[SerialEndpoint.LC1State].DataReady += Controller1State;
+            SerialDevs[SerialEndpoint.LC2State].DataReady += Controller2State;
+            SerialDevs[SerialEndpoint.LC1Config].DataReady += Controller1Config;
+            SerialDevs[SerialEndpoint.LC2Config].DataReady += Controller2Config;
             s485Dispatcher = RS485Dispatcher.GetInstance();
             s485Dispatcher.Ready += UART_Configured;
             syncTimer = new Timer(SyncTimerCallback, timerMRE, TimeSpan.FromMilliseconds(-1), TimeSpan.FromDays(2));
@@ -91,10 +97,10 @@ namespace WindowsIoT
 
         private void Dispatcher_Tick(object sender)
         {
-            s485Dispatcher.EnqueueItem(SerialDevs[3]);
-            s485Dispatcher.EnqueueItem(SerialDevs[7]);
-            s485Dispatcher.EnqueueItem(SerialDevs[2]);
-            s485Dispatcher.EnqueueItem(SerialDevs[6]);
+            s485Dispatcher.EnqueueItem(SerialDevs[SerialEndpoint.LC1State]);
+            s485Dispatcher.EnqueueItem(SerialDevs[SerialEndpoint.LC2State]);
+            s485Dispatcher.EnqueueItem(SerialDevs[SerialEndpoint.LC1Config]);
+            s485Dispatcher.EnqueueItem(SerialDevs[SerialEndpoint.LC2Config]);
             brightness.ReadLux();
         }
 
@@ -269,8 +275,8 @@ namespace WindowsIoT
             }
 
 #endif
-
-
+            if (e is null)
+                throw new ArgumentNullException(nameof(e), "Parameter shouldn't be null");
 
             // Do not repeat app initialization when the Window already has content,
             // just ensure that the window is active
@@ -324,5 +330,34 @@ namespace WindowsIoT
             //TODO: Save application state and stop any background activity
             deferral.Complete();
         }
+
+        #region IDisposable Support
+        private bool disposedValue = false; // To detect redundant calls
+
+        void Dispose(bool disposing)
+        {
+            if (!disposedValue)
+            {
+                if (disposing)
+                {
+                    // TODO: dispose managed state (managed objects).
+                    dispatcher.Dispose();
+                    timerMRE.Dispose();
+                    s485Dispatcher.Dispose();
+                }
+                // TODO: free unmanaged resources (unmanaged objects) and override a finalizer below.
+                // TODO: set large fields to null.
+                disposedValue = true;
+            }
+        }
+        // This code added to correctly implement the disposable pattern.
+        public void Dispose()
+        {
+            // Do not change this code. Put cleanup code in Dispose(bool disposing) above.
+            Dispose(true);
+            // TODO: uncomment the following line if the finalizer is overridden above.
+            // GC.SuppressFinalize(this);
+        }
+        #endregion
     }
 }
