@@ -26,10 +26,10 @@ namespace WindowsIoT
     /// </summary>
     public sealed partial class TimeInfo : Page
     {
-        DispatcherTimer timer = new DispatcherTimer();
-        RS485Dispatcher s485Dispatcher = RS485Dispatcher.GetInstance();
-        BrightnessControl brightnessControl = BrightnessControl.GetInstance();
-        SolarTimeNOAA SolarTime = SolarTimeNOAA.GetInstance();
+        readonly DispatcherTimer timer = new DispatcherTimer();
+        readonly RS485Dispatcher s485Dispatcher = RS485Dispatcher.GetInstance();
+        readonly BrightnessControl brightnessControl = BrightnessControl.GetInstance();
+        readonly SolarTimeNOAA SolarTime = SolarTimeNOAA.GetInstance();
 
         public TimeInfo()
         {
@@ -58,13 +58,19 @@ namespace WindowsIoT
                 SolarTime.CurrentDate = dateTime.AddDays(1);
                 sEvVal.Text = SolarTime.Sunrise.ToString("H:mm:ss", DateTimeFormatInfo.InvariantInfo);
             }
-            App.serialComm[3].DataReady += C1StateRdy;
-            App.serialComm[7].DataReady += C2StateRdy;
+            App.SerialDevs[3].DataReady += C1StateRdy;
+            App.SerialDevs[7].DataReady += C2StateRdy;
             RegModeSw.IsOn = brightnessControl.Mode == BrightnessControl.ControlMode.Auto;
             BlLevel.Value = brightnessControl.Level * 100;
             BlMinLvl.Value = brightnessControl.MinLevel * 100;
             AmbLuxMax.Value = 101 - Math.Exp((2050 - brightnessControl.MaxLux) * Math.Log(100) / 2000);
             timer.Start();
+
+            Windows.Storage.ApplicationDataContainer applicationData = 
+                Windows.Storage.ApplicationData.Current.LocalSettings;
+            if (!(applicationData.Values["IsNTPenabled"] is bool))
+                applicationData.Values["IsNTPenabled"] = false;
+            ntpEn.IsOn = (bool)applicationData.Values["IsNTPenabled"];
             base.OnNavigatedTo(e);
         }
         private void Timer_Tick(object sender, object e)
@@ -72,8 +78,7 @@ namespace WindowsIoT
             TimeSpan timeSpan = App.SyncTimeSpan();
             ntpSync.Text = timeSpan.Equals(TimeSpan.FromDays(365)) ? "N/A" :
                 string.Format("{0}:{1:D2}:{2:D2}", (int)timeSpan.TotalHours, timeSpan.Minutes, timeSpan.Seconds);
-            rsLoad.Text = string.Format("RS485 load: {0} bps, {1}", 
-                s485Dispatcher.BusSpeed, s485Dispatcher.Statistics);
+            rsLoad.Text = "RS485: " + s485Dispatcher.Statistics;
             LuxTLevel.Text = string.Format("Ambient light level: {0:F1}lux", brightnessControl.Lux);
             BlTLevel.Text = brightnessControl.Level.ToString("P0");
             if (brightnessControl.Mode == BrightnessControl.ControlMode.Auto)
@@ -84,50 +89,52 @@ namespace WindowsIoT
         {
             TimeSpan timeSpan = TimeSpan.FromSeconds((sender as ControllerState).Tick / 32.0);
             lc1Ot.Text = string.Format("{0}:{1:D2}:{2:D2}", (int)timeSpan.TotalHours, timeSpan.Minutes, timeSpan.Seconds);
+            lc1ppm.Text = string.Format("{0} ppm", (App.SerialDevs[2] as ControllerConfig).RTCCorrect);
         }
         private void C2StateRdy(SerialComm sender)
         {
             TimeSpan timeSpan = TimeSpan.FromSeconds((sender as ControllerState).Tick / 32.0);
             lc2Ot.Text = string.Format("{0}:{1:D2}:{2:D2}", (int)timeSpan.TotalHours, timeSpan.Minutes, timeSpan.Seconds);
+            lc2ppm.Text = string.Format("{0} ppm", (App.SerialDevs[6] as ControllerConfig).RTCCorrect);
         }
         protected override void OnNavigatingFrom(NavigatingCancelEventArgs e)
         {
             timer.Stop();
-            App.serialComm[3].DataReady -= C1StateRdy;
-            App.serialComm[7].DataReady -= C2StateRdy;
+            App.SerialDevs[3].DataReady -= C1StateRdy;
+            App.SerialDevs[7].DataReady -= C2StateRdy;
             base.OnNavigatingFrom(e);
         }
-        private void Snm_BackRequested(object sender, RoutedEventArgs e)
+        private void Snm_BackRequested(object _1, RoutedEventArgs _2)
         {
             Frame.Navigate(typeof(MainPage));
         }
 
-        private void BlLevel_ValueChanged(object sender, RangeBaseValueChangedEventArgs e)
+        private void BlLevel_ValueChanged(object _1, RangeBaseValueChangedEventArgs e)
         {
             brightnessControl.Level = (float)e.NewValue / 100f;
         }
 
-        private void BlMinLvl_ValueChanged(object sender, RangeBaseValueChangedEventArgs e)
+        private void BlMinLvl_ValueChanged(object _1, RangeBaseValueChangedEventArgs e)
         {
             if (BlTMinLvl == null)
                 return;
             brightnessControl.MinLevel = (float)e.NewValue / 100f;
         }
 
-        private void AmbLuxMax_ValueChanged(object sender, RangeBaseValueChangedEventArgs e)
+        private void AmbLuxMax_ValueChanged(object _1, RangeBaseValueChangedEventArgs e)
         {
             if (AmbTLux == null) return;
             brightnessControl.MaxLux = 2050f - (float)(Math.Log(101 - e.NewValue) * 2000 / Math.Log(AmbLuxMax.Maximum));
             AmbTLux.Text = brightnessControl.MaxLux.ToString("F0") + "lux";
         }
 
-        private async void LuxTLevel_Tapped(object sender, TappedRoutedEventArgs e)
+        private async void LuxTLevel_Tapped(object _1, TappedRoutedEventArgs _2)
         {
             await new Windows.UI.Popups.MessageDialog(brightnessControl.ConfigTrace, 
                 "HW state: " + brightnessControl.HWStatus.ToString()).ShowAsync();
         }
 
-        private void RegModeSw_Toggled(object sender, RoutedEventArgs e)
+        private void RegModeSw_Toggled(object _1, RoutedEventArgs _2)
         {
             if (BlMinLvl == null)
                 return;
@@ -143,6 +150,12 @@ namespace WindowsIoT
                 BlMinLvl.IsEnabled = AmbLuxMax.IsEnabled = false;
                 BlLevel.IsEnabled = true;
             }
+        }
+
+        private void NtpEn_Toggled(object _1, RoutedEventArgs _2)
+        {
+            Windows.Storage.ApplicationData.Current.LocalSettings.Values["IsNTPenabled"] = ntpEn.IsOn;
+            App.UpdateNTP();
         }
     }
 }

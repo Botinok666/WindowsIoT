@@ -27,7 +27,7 @@ namespace TouchPanels.Devices
 		private const byte CMD_Z2_POS = 0x40;
 		private const byte CMD_Y_POS = 0x50;
 
-		public static SpiDevice touchSPI;
+		private static SpiDevice touchSPI;
 
 		private static Tsc2046 _DefaultInstance;
 		private static Task _initTask;
@@ -39,7 +39,7 @@ namespace TouchPanels.Devices
 				_DefaultInstance = new Tsc2046();
 				_initTask = _DefaultInstance.InitTSC2046SPI();
 			}
-			await _initTask.ConfigureAwait(false);
+			await _initTask.ConfigureAwait(true);
 			return _DefaultInstance;
 		}
 

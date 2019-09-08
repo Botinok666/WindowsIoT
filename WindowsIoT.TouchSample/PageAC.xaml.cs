@@ -14,8 +14,8 @@ namespace WindowsIoT
     /// </summary>
     public sealed partial class PageAC : Page
     {
-        DispatcherTimer timer = new DispatcherTimer();
-        RS485Dispatcher s485Dispatcher = RS485Dispatcher.GetInstance();
+        readonly DispatcherTimer timer = new DispatcherTimer();
+        readonly RS485Dispatcher s485Dispatcher = RS485Dispatcher.GetInstance();
         bool refreshReq;
         public PageAC()
         {
@@ -25,10 +25,9 @@ namespace WindowsIoT
         }
         private void Timer_Tick(object sender, object e)
         {
-            s485Dispatcher.EnqueueItem(App.serialComm[0]);
-            s485Dispatcher.EnqueueItem(App.serialComm[1]);
-            rsLoad.Text = string.Format("RS485: {0} bps, {1}", 
-                s485Dispatcher.BusSpeed, s485Dispatcher.Statistics);
+            s485Dispatcher.EnqueueItem(App.SerialDevs[0]);
+            s485Dispatcher.EnqueueItem(App.SerialDevs[1]);
+            rsLoad.Text = "RS485: " + s485Dispatcher.Statistics;
         }
         
         private void AirConfigRdy(SerialComm sender)
@@ -49,7 +48,7 @@ namespace WindowsIoT
         }
         private void AirStateRdy(SerialComm sender)
         {
-            AirCondConfig config = App.serialComm[0] as AirCondConfig;
+            AirCondConfig config = App.SerialDevs[0] as AirCondConfig;
             AirCondState state = sender as AirCondState;
             if (config.IsBufferValid)
             {
@@ -68,9 +67,9 @@ namespace WindowsIoT
 
         protected override void OnNavigatedTo(NavigationEventArgs e)
         {
-            App.serialComm[0].DataReady += AirConfigRdy;
-            App.serialComm[1].DataReady += AirStateRdy;
-            s485Dispatcher.EnqueueItem(App.serialComm[0]);
+            App.SerialDevs[0].DataReady += AirConfigRdy;
+            App.SerialDevs[1].DataReady += AirStateRdy;
+            s485Dispatcher.EnqueueItem(App.SerialDevs[0]);
             refreshReq = true;
             timer.Start();
             base.OnNavigatedTo(e);
@@ -78,16 +77,16 @@ namespace WindowsIoT
         protected override void OnNavigatingFrom(NavigatingCancelEventArgs e)
         {
             timer.Stop();
-            App.serialComm[0].DataReady -= AirConfigRdy;
-            App.serialComm[1].DataReady -= AirStateRdy;
+            App.SerialDevs[0].DataReady -= AirConfigRdy;
+            App.SerialDevs[1].DataReady -= AirStateRdy;
             base.OnNavigatingFrom(e);
         }
-        private void Snm_BackRequested(object sender, RoutedEventArgs e)
+        private void Snm_BackRequested(object _1, RoutedEventArgs _2)
         {
             Frame.Navigate(typeof(MainPage));
         }
 
-        private void MinT_ValueChanged(object sender, RangeBaseValueChangedEventArgs e)
+        private void MinT_ValueChanged(object _1, RangeBaseValueChangedEventArgs e)
         {
             if (maxT == null)
                 return;
@@ -95,7 +94,7 @@ namespace WindowsIoT
                 maxT.Value = e.NewValue + 2;
         }
 
-        private void MaxT_ValueChanged(object sender, RangeBaseValueChangedEventArgs e)
+        private void MaxT_ValueChanged(object _1, RangeBaseValueChangedEventArgs e)
         {
             if (minT == null)
                 return;
@@ -111,7 +110,7 @@ namespace WindowsIoT
                 maxRH.Value = e.NewValue + 10;
         }
 
-        private void MaxRH_ValueChanged(object sender, RangeBaseValueChangedEventArgs e)
+        private void MaxRH_ValueChanged(object _1, RangeBaseValueChangedEventArgs e)
         {
             if (minRH == null)
                 return;
@@ -119,7 +118,7 @@ namespace WindowsIoT
                 minRH.Value = e.NewValue - 10;
         }
 
-        private void FanLvl_ValueChanged(object sender, RangeBaseValueChangedEventArgs e)
+        private void FanLvl_ValueChanged(object _1, RangeBaseValueChangedEventArgs _2)
         {
         }
     }

@@ -33,8 +33,8 @@ namespace WindowsIoT
     
     public sealed partial class MainPage : Page
     {
-        DispatcherTimer dispatcher1s = new DispatcherTimer();
-        RS485Dispatcher s485Dispatcher = RS485Dispatcher.GetInstance();
+        readonly DispatcherTimer dispatcher1s = new DispatcherTimer();
+        readonly RS485Dispatcher s485Dispatcher = RS485Dispatcher.GetInstance();
 
         const string CalibrationFilename = "TSC2046";
         private static Tsc2046 tsc2046;
@@ -54,23 +54,21 @@ namespace WindowsIoT
             DateTime ntpTime = App.GetDateTime();
             homeDateTime.Content = (ntpTime.Year < 2018) ? "N/A" :
                 ntpTime.ToString("dddd d MMM H:mm:ss", DateTimeFormatInfo.InvariantInfo);
-            
-            rsUtil.Text = string.Format("{0} bps", s485Dispatcher.BusSpeed);
-            s485Dispatcher.EnqueueItem(App.serialComm[1]); //AirCondState
+            s485Dispatcher.EnqueueItem(App.SerialDevs[1]); //AirCondState
         }
 
         private async void Init()
         {
-            tsc2046 = await Tsc2046.GetDefaultAsync();
+            tsc2046 = await Tsc2046.GetDefaultAsync().ConfigureAwait(true);
             if (!tsc2046.IsCalibrated)
             {
                 try
                 {
-                    await tsc2046.LoadCalibrationAsync(CalibrationFilename);
+                    await tsc2046.LoadCalibrationAsync(CalibrationFilename).ConfigureAwait(true);
                 }
                 catch (FileNotFoundException)
                 {
-                    await CalibrateTouch(); //Initiate calibration
+                    await CalibrateTouch().ConfigureAwait(true); //Initiate calibration
                 }
                 catch (UnauthorizedAccessException)
                 {
@@ -94,12 +92,12 @@ namespace WindowsIoT
         private async Task CalibrateTouch()
         {
             var calibration = await TouchPanels.UI
-                .LcdCalibrationView.CalibrateScreenAsync(tsc2046);
+                .LcdCalibrationView.CalibrateScreenAsync(tsc2046).ConfigureAwait(true);
             tsc2046.SetCalibration(calibration.A, calibration.B, calibration.C, 
                 calibration.D, calibration.E, calibration.F);
             try
             {
-                await tsc2046.SaveCalibrationAsync(CalibrationFilename);
+                await tsc2046.SaveCalibrationAsync(CalibrationFilename).ConfigureAwait(true);
             }
             catch (Exception ex)
             {
@@ -110,16 +108,21 @@ namespace WindowsIoT
         
         private uint _pID = 0;
         InputInjector _injector;
+        InjectedInputRectangle inputRectangle = new InjectedInputRectangle()
+        { Bottom = 24, Top = 24, Left = 24, Right = 24 };
         private void Processor_PointerDown(object sender, TouchPanels.PointerEventArgs e)
         {
+            //Reset timeout for backlight
+            Util.BrightnessControl.GetInstance().ResetTimeout();
+            if (Util.BrightnessControl.GetInstance().Level == 0)
+                return;
             _injector = InputInjector.TryCreate();
             _injector.InitializeTouchInjection(InjectedInputVisualizationMode.Indirect);
             List<InjectedInputTouchInfo> PDown = new List<InjectedInputTouchInfo>()
             {
                 new InjectedInputTouchInfo()
                 {
-                    Contact = new InjectedInputRectangle()
-                    { Bottom = 8,Top = 8,Left = 8, Right = 8},
+                    Contact = inputRectangle,
                     PointerInfo = new InjectedInputPointerInfo()
                     {
                         PointerId = _pID,
@@ -139,12 +142,13 @@ namespace WindowsIoT
         }
         private void Processor_PointerMoved(object sender, TouchPanels.PointerEventArgs e)
         {
+            if (Util.BrightnessControl.GetInstance().Level == 0)
+                return;
             List<InjectedInputTouchInfo> PMove = new List<InjectedInputTouchInfo>()
             {
                 new InjectedInputTouchInfo()
                 {
-                    Contact = new InjectedInputRectangle()
-                    { Bottom = 8,Top = 8,Left = 8, Right = 8},
+                    Contact = inputRectangle,
                     PointerInfo = new InjectedInputPointerInfo()
                     {
                         PointerId = _pID,
@@ -164,6 +168,8 @@ namespace WindowsIoT
         }
         private void Processor_PointerUp(object sender, TouchPanels.PointerEventArgs e)
         {
+            if (Util.BrightnessControl.GetInstance().Level == 0)
+                return;
             List<InjectedInputTouchInfo> PUp = new List<InjectedInputTouchInfo>()
             {
                 new InjectedInputTouchInfo()
@@ -218,17 +224,17 @@ namespace WindowsIoT
         protected override void OnNavigatedTo(NavigationEventArgs e)
         {
             dispatcher1s.Start();
-            App.serialComm[1].DataReady += AirStateRdy;
-            App.serialComm[3].DataReady += C1StateRdy; //These two should be enqueued from main
-            App.serialComm[7].DataReady += C2StateRdy;
+            App.SerialDevs[1].DataReady += AirStateRdy;
+            App.SerialDevs[3].DataReady += C1StateRdy; //These two should be enqueued from main
+            App.SerialDevs[7].DataReady += C2StateRdy;
             base.OnNavigatedTo(e);
         }
         protected override void OnNavigatingFrom(NavigatingCancelEventArgs e)
         {
             dispatcher1s.Stop();
-            App.serialComm[1].DataReady -= AirStateRdy;
-            App.serialComm[3].DataReady -= C1StateRdy;
-            App.serialComm[7].DataReady -= C2StateRdy;
+            App.SerialDevs[1].DataReady -= AirStateRdy;
+            App.SerialDevs[3].DataReady -= C1StateRdy;
+            App.SerialDevs[7].DataReady -= C2StateRdy;
             base.OnNavigatingFrom(e);
         }
 

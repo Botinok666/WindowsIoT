@@ -20,10 +20,8 @@ namespace WindowsIoT.Communication
         private static RS485Dispatcher _instance = null;
         private SerialDevice serialPort;
         private DataWriter dataWriteObject;
-        private DataReader dataReaderObject;
-        private AutoResetEvent _ARE;
-        private Queue<SerialComm> serialComm;
-        private Stopwatch stopwatch;
+        private readonly AutoResetEvent _ARE;
+        private readonly Queue<SerialComm> serialComm;
         private IAsyncAction asyncAction;
         private long _ticksElapsed;
         private int _timeout, _fails;
@@ -53,7 +51,7 @@ namespace WindowsIoT.Communication
             }
         }
         private Stats _stats;
-        private Queue<Stats> _queue;
+        private readonly Queue<Stats> _queue;
         public delegate void config();
         private event config _ready;
         public event config Ready
@@ -61,8 +59,12 @@ namespace WindowsIoT.Communication
             add
             {
                 if (_ready == null)
+                {
+                    _ready += value;
                     UARTconnect();
-                _ready += value;
+                }
+                else
+                    _ready += value;
             }
             remove
             {
@@ -76,7 +78,6 @@ namespace WindowsIoT.Communication
         {
             serialComm = new Queue<SerialComm>(10);
             _ARE = new AutoResetEvent(false);
-            stopwatch = new Stopwatch();
             lockObj = new object();
             _ticksElapsed = 0;
             _timeout = _fails = 0;
@@ -113,7 +114,6 @@ namespace WindowsIoT.Communication
 
                 // Create the DataWriter object and attach to OutputStream
                 dataWriteObject = new DataWriter(serialPort.OutputStream);
-                dataReaderObject = new DataReader(serialPort.InputStream);
                 _ready?.Invoke();
             }
             catch (Exception ex)
@@ -129,22 +129,8 @@ namespace WindowsIoT.Communication
             if (serialPort == null || _isRunning)
                 return;
             _stats = new Stats() { packets = 0, badCRC = 0, rxLost = 0, txLost = 0 };
-            stopwatch.Restart();
             asyncAction = Windows.System.Threading.ThreadPool.RunAsync(
                 BusDispatcher, WorkItemPriority.High, WorkItemOptions.TimeSliced);
-        }
-        /// <summary>
-        /// Current bus loading in bytes per second
-        /// </summary>
-        public long BusSpeed
-        {
-            get
-            {
-                long x = Interlocked.Exchange(ref _ticksElapsed, 0) * 1000 
-                    / stopwatch.ElapsedMilliseconds;
-                stopwatch.Restart();
-                return x;
-            }
         }
         /// <summary>
         /// Push an item into a dispatcher queue
@@ -247,6 +233,7 @@ namespace WindowsIoT.Communication
                             buffer, buffer.Capacity, InputStreamOptions.None)
                             .AsTask(timeoutSource.Token)).ToArray();
                         bt += (uint)arr.Length;
+                        timeoutSource.Dispose();
                     }
                     catch (TaskCanceledException)
                     {

@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using Windows.Foundation;
+using Windows.ApplicationModel.Resources;
 
 namespace TouchPanels.Algorithms
 {
@@ -11,8 +12,8 @@ namespace TouchPanels.Algorithms
 	/// </summary>
 	internal class LeastSquaresAdjustment
 	{
-		private List<Point> _inputs;
-		private List<Point> _outputs;
+		private readonly List<Point> _inputs;
+		private readonly List<Point> _outputs;
 
 		/// <summary>
 		/// Initialize Least Squares transformations
@@ -29,7 +30,7 @@ namespace TouchPanels.Algorithms
 			_inputs = new List<Point>(inputs);
 			_outputs = new List<Point>(outputs);
 			if (_inputs.Count != _outputs.Count)
-				throw new ArgumentException("Inputs and Outputs collections must contain the same number of items");
+				throw new ArgumentException(ResourceLoader.GetForCurrentView().GetString("PointsException"));
 		}
 
 		/// <summary>
@@ -107,7 +108,7 @@ namespace TouchPanels.Algorithms
 		public AffineTransformationParameters GetTransformation()
 		{
 			if (_inputs.Count < 3)
-				throw (new System.Exception("At least 3 measurements required to calculate affine transformation"));
+				throw new System.Exception(ResourceLoader.GetForCurrentView().GetString("MeasurementsException"));
 
 			int count = _inputs.Count;
             Point[] outputs = _outputs.ToArray();
@@ -157,61 +158,8 @@ namespace TouchPanels.Algorithms
 				var tt = result.Transform(_outputs[i]);
 				s0 += Math.Pow(tt.X - _inputs[i].X, 2) + Math.Pow(tt.Y - _inputs[i].Y, 2);
 			}
-			result.s0 = Math.Sqrt(s0) / (this._inputs.Count);
+			result.S0 = Math.Sqrt(s0) / (this._inputs.Count);
 			return result;
-		}
-		/// <summary>
-		/// Calculates the four helmert transformation parameters {a,b,c,d} and the sum of the squares of the residuals (s0)
-		/// </summary>
-		/// <remarks>
-		/// <para>
-		/// a,b defines scale vector 1 of coordinate system, d,e scale vector 2.
-		/// c,f defines offset.
-		/// </para>
-		/// <para>
-		/// Converting from input (X,Y) to output coordinate system (X',Y') is done by:
-		/// X' = a*X + b*Y + c, Y' = -b*X + a*Y + d
-		/// </para>
-		/// <para>This is a transformation initially based on the affine transformation but slightly simpler.</para>
-		/// </remarks>
-		/// <returns>Array with the four transformation parameters, and sum of squared residuals: a,b,c,d,s0</returns>
-		public HelmertTransformationParameters GetHelmertTransformation() 
-		{
-			throw new NotSupportedException("This method returns an incorrect transformation - do not use");
-			//if (_inputs.Count < 2)
-			//	throw(new System.Exception("At least 2 measurements required to calculate helmert transformation"));
-			
-			//double b00=0;
-			//double b02=0;
-			//double b03=0;
-			//double[] t = new double[4];
-			//for (int i = 0; i < _inputs.Count; i++)
-			//{
-			//	//Calculate summed values
-			//	b00 += Math.Pow(_inputs[i].X, 2) + Math.Pow(_inputs[i].Y, 2);
-			//	b02 -= _inputs[i].X;
-			//	b03 -= _inputs[i].Y;
-			//	t[0] += -(_inputs[i].X * _outputs[i].X) - (_inputs[i].Y * _outputs[i].Y);
-			//	t[1] += -(_inputs[i].Y * _outputs[i].X) + (_inputs[i].X * _outputs[i].Y);
-			//	t[2] += _outputs[i].X;
-			//	t[3] += _outputs[i].Y;
-			//}
-			//double frac = 1 / (-_inputs.Count * b00 + Math.Pow(b02, 2) + Math.Pow(b03, 2));
-			//var result = new HelmertTransformationParameters();
-			//result.A = (-_inputs.Count * t[0] + b02 * t[2] + b03 * t[3]) * frac;
-			//result.B = (-_inputs.Count * t[1] + b03 * t[2] - b02 * t[3]) * frac;
-			//result.C = (b02 * t[0] + b03 * t[1] - t[2] * b00) * frac;
-			//result.D = (b03 * t[0] - b02 * t[1] - t[3] * b00) * frac;
-			
-			////Calculate s0
-			//double s0=0;
-			//for (int i = 0; i < _inputs.Count; i++) 
-			//{
-			//	var tt = result.Transform(_outputs[i]);
-			//	s0 += Math.Pow(tt.X - _inputs[i].X, 2) + Math.Pow(tt.Y - _inputs[i].Y, 2);
-			//}
-			//result.s0 = Math.Sqrt(s0) / (_inputs.Count);
-			//return result;
 		}
 
 		/// <summary>
@@ -220,7 +168,7 @@ namespace TouchPanels.Algorithms
 		/// <param name="n">width of matrix</param>
 		/// <param name="m">height of matrix</param>
 		/// <returns>n*m matrix</returns>
-		private double[][] CreateMatrix(int n, int m) 
+		private static double[][] CreateMatrix(int n, int m) 
 		{
 			double[][] N = new double[n][];
 			for(int i=0;i<n;i++) 
@@ -228,22 +176,6 @@ namespace TouchPanels.Algorithms
 				N[i] = new double[m];
 			}
 			return N;
-		}
-	}
-    
-    internal class HelmertTransformationParameters
-	{
-		public double A { get; set; }
-		public double B { get; set; }
-		public double C { get; set; }
-		public double D { get; set; }
-		public double s0 { get; set; }
-		public Point Transform(Point input)
-		{
-			return new Point(
-			 A * input.X + B * input.Y + C,
-			 -B * input.X + A * input.Y + D
-			 );
 		}
 	}
 
@@ -255,7 +187,7 @@ namespace TouchPanels.Algorithms
 		public double D { get; set; }
 		public double E { get; set; }
 		public double F { get; set; }
-		public double s0 { get; set; }
+		public double S0 { get; set; }
 		public Point Transform(Point input)
 		{
 			return new Point(

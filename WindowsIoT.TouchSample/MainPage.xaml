@@ -106,11 +106,7 @@
             <TextBlock x:Name="showerRH" HorizontalAlignment="Center"/>
         </StackPanel>
 
-        <Border Grid.Row="10" Grid.Column="0" Grid.ColumnSpan="2" Background="Blue"/>
-
-        <TextBlock Grid.Row="10" Grid.Column="0" Text="RS485:" HorizontalTextAlignment="Right"/>
-        <TextBlock Grid.Row="10" Grid.Column="1" x:Name="rsUtil" Text="0% load" HorizontalAlignment="Center"/>
-        <Button Grid.Row="10" Grid.Column="2" Grid.ColumnSpan="4" x:Name="homeDateTime" Tapped="HomeDateTime_Click" FontWeight="Bold" Background="DimGray" Foreground="PaleTurquoise" Margin="0"/>
+        <Button Grid.Row="6" Grid.Column="0" Grid.ColumnSpan="6" x:Name="homeDateTime" Tapped="HomeDateTime_Click" FontWeight="Bold" Background="DimGray" Foreground="PaleTurquoise" Margin="0"/>
     </Grid>
 
 </Page>

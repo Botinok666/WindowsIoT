@@ -95,17 +95,17 @@ namespace WindowsIoT
                 case "Room A":
                 case "Toilet":
                 case "Table":
-                    config = App.serialComm[2] as ControllerConfig;
-                    state = App.serialComm[3] as ControllerState;
-                    chOnTime = App.serialComm[4] as ControllerChOnTime;
+                    config = App.SerialDevs[2] as ControllerConfig;
+                    state = App.SerialDevs[3] as ControllerState;
+                    chOnTime = App.SerialDevs[4] as ControllerChOnTime;
                     break;
                 case "Room B":
                 case "Room C":
                 case "Corridor":
                 case "Shower":
-                    config = App.serialComm[6] as ControllerConfig;
-                    state = App.serialComm[7] as ControllerState;
-                    chOnTime = App.serialComm[8] as ControllerChOnTime;
+                    config = App.SerialDevs[6] as ControllerConfig;
+                    state = App.SerialDevs[7] as ControllerState;
+                    chOnTime = App.SerialDevs[8] as ControllerChOnTime;
                     break;
             }
             switch (e.Parameter as string)
@@ -220,8 +220,7 @@ namespace WindowsIoT
             }
             if (pivot.Items.Contains(msen))
                 opmodeT.Text = state.MSenState;
-            rsLoad.Text = string.Format("RS485: {0} bps, {1}",
-                s485Dispatcher.BusSpeed, s485Dispatcher.Statistics);
+            rsLoad.Text = "RS485: " + s485Dispatcher.Statistics;
         }
         private void ConfigRdy(SerialComm sender)
         {

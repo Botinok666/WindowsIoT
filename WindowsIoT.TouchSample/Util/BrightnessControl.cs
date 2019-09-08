@@ -9,6 +9,7 @@ namespace WindowsIoT.Util
     public class BrightnessControl
     {
         private static BrightnessControl _instance = null;
+        private uint _timeout = 0;
         private I2cDevice max44009 = null, pca9685 = null;
         private float _minLevel, _maxLux, _currentLvl;
         private readonly byte[] pinData, result;
@@ -73,7 +74,7 @@ namespace WindowsIoT.Util
         public string ConfigTrace { get; private set; }
         private void SetDutyCycle()
         {
-            BitConverter.GetBytes((ushort)((1 - Level) * 4000)).CopyTo(pinData, 1);
+            BitConverter.GetBytes((ushort)((1 - Level) * 4080)).CopyTo(pinData, 1);
             pca9685.Write(pinData);
         }
         private async void GetI2Clist()
@@ -92,13 +93,24 @@ namespace WindowsIoT.Util
             _currentLvl = .1f;
             SetDutyCycle();
         }
+        public void ResetTimeout()
+        {
+            _timeout = 0;
+        }
         /// <summary>
         /// Retrieves current lux value from MAX44009. Performs brightness correction (in auto mode)
+        /// Also increases timeout counter
         /// </summary>
         public void ReadLux()
         {
             if (!HWStatus)
                 return;
+            if (_timeout++ > 30)
+            {
+                _currentLvl = 0;
+                SetDutyCycle();
+                return;
+            }
             try
             {
                 max44009.WriteRead(new byte[] { 0x03 }, result);

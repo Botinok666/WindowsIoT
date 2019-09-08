@@ -15,7 +15,7 @@ namespace TouchPanels
 		public Point Position { get; internal set; }
 		public int Pressure { get; internal set; }
 	}
-	public sealed class TouchProcessor : DependencyObject
+	public sealed class TouchProcessor : DependencyObject, IDisposable
 	{
 		private ITouchDevice device;
         private CancellationTokenSource threadCancelSource = null;
@@ -90,7 +90,7 @@ namespace TouchPanels
 			while (!cancellationToken.IsCancellationRequested)
 			{
 				ReadTouchState();
-				await Task.Delay(16);
+				await Task.Delay(16).ConfigureAwait(true);
 			}
 		}
 
@@ -141,5 +141,10 @@ namespace TouchPanels
                 threadCancelSource = null;
             }
 		}
-	}
+
+        public void Dispose()
+        {
+            ((IDisposable)threadCancelSource).Dispose();
+        }
+    }
 }

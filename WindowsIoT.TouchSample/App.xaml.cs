@@ -11,6 +11,7 @@ using Windows.ApplicationModel.Activation;
 using Windows.Devices.I2c;
 using Windows.Devices.Enumeration;
 using Windows.Networking.Sockets;
+using Windows.Storage;
 using Windows.Storage.Streams;
 using Windows.System.Threading;
 using Windows.UI.Xaml;
@@ -38,20 +39,20 @@ namespace WindowsIoT
         
         private static DateTime ntpTime = new DateTime(1900, 1, 1);
         private static TimeZoneInfo timeZoneInfo = null;
-        private static Stopwatch stopwatch = new Stopwatch();
-        private Timer syncTimer = null;
+        private static readonly Stopwatch stopwatch = new Stopwatch();
+        private static Timer syncTimer = null;
         private Timer dispatcher = null;
-        private ManualResetEvent timerMRE = new ManualResetEvent(false);
+        private readonly ManualResetEvent timerMRE = new ManualResetEvent(false);
         private float _msenRelA, _msenRelB;
 
-        private Util.SolarTimeNOAA SolarTime = null;
+        private readonly Util.SolarTimeNOAA SolarTime = null;
 
         //private Semaphore dispatcherS = null;
-        private RS485Dispatcher s485Dispatcher = null;
+        private readonly RS485Dispatcher s485Dispatcher = null;
         //All external RS485 devices are here
-        static public SerialComm[] serialComm = null;
+        static public SerialComm[] SerialDevs { get; private set; }
         //Brightness control maintained here
-        private Util.BrightnessControl brightness = null;
+        private readonly Util.BrightnessControl brightness = null;
 
         struct TimeCorrection
         {
@@ -67,19 +68,20 @@ namespace WindowsIoT
         {
             InitializeComponent();
             
-            serialComm = new SerialComm[] {
+            SerialDevs = new SerialComm[] {
                 new AirCondConfig(0x12, 0x13), new AirCondState(0x11, 0),
                 new ControllerConfig(0x22, 0x23), new ControllerState(0x21, 0),
                 new ControllerChOnTime(0x24, 0), new ControllerOTSet(0, 0x23),
                 new ControllerConfig(0x32, 0x33), new ControllerState(0x31, 0),
                 new ControllerChOnTime(0x34, 0), new ControllerOTSet(0, 0x33) };
-            serialComm[3].DataReady += Controller1State;
-            serialComm[7].DataReady += Controller2State;
-            serialComm[2].DataReady += Controller1Config;
-            serialComm[6].DataReady += Controller2Config;
+            SerialDevs[3].DataReady += Controller1State;
+            SerialDevs[7].DataReady += Controller2State;
+            SerialDevs[2].DataReady += Controller1Config;
+            SerialDevs[6].DataReady += Controller2Config;
             s485Dispatcher = RS485Dispatcher.GetInstance();
             s485Dispatcher.Ready += UART_Configured;
-            //syncTimer = new Timer(SyncTimerCallback, timerMRE, TimeSpan.FromSeconds(10), TimeSpan.FromDays(2));
+            syncTimer = new Timer(SyncTimerCallback, timerMRE, TimeSpan.FromMilliseconds(-1), TimeSpan.FromDays(2));
+            
             timeZoneInfo = TimeZoneInfo.FindSystemTimeZoneById("Russian Standard Time");
             SolarTime = Util.SolarTimeNOAA.GetInstance();
             SolarTime.Configure(timeZoneInfo, 47.215, 38.925);
@@ -89,10 +91,10 @@ namespace WindowsIoT
 
         private void Dispatcher_Tick(object sender)
         {
-            s485Dispatcher.EnqueueItem(serialComm[3]);
-            s485Dispatcher.EnqueueItem(serialComm[7]);
-            s485Dispatcher.EnqueueItem(serialComm[2]);
-            s485Dispatcher.EnqueueItem(serialComm[6]);
+            s485Dispatcher.EnqueueItem(SerialDevs[3]);
+            s485Dispatcher.EnqueueItem(SerialDevs[7]);
+            s485Dispatcher.EnqueueItem(SerialDevs[2]);
+            s485Dispatcher.EnqueueItem(SerialDevs[6]);
             brightness.ReadLux();
         }
 
@@ -122,14 +124,15 @@ namespace WindowsIoT
                 ulong intPart = SwapEndianness(BitConverter.ToUInt32(b, serverReplyTime));
                 //Get the seconds fraction
                 ulong fractPart = SwapEndianness(BitConverter.ToUInt32(b, serverReplyTime + 4));
-                var milliseconds = (intPart * 1000) + ((fractPart * 1000) / 0x100000000L);
+                var milliseconds = (intPart * 1000) + (fractPart * 1000 / 0x100000000L);
                 //**UTC** time
-                ntpTime = (new DateTime(1900, 1, 1)).AddMilliseconds(milliseconds);
+                ntpTime = new DateTime(1900, 1, 1).AddMilliseconds(milliseconds);
                 stopwatch.Restart();
                 SolarTime.CurrentDate = GetDateTime();
                 timerMRE.Set();
                 _tcA.saveRequest = _tcB.saveRequest = true;
             }
+            sender.Dispose();
         }
         private async void SetTimeFromNetwork(string hostName)
         {
@@ -173,6 +176,16 @@ namespace WindowsIoT
         public static TimeSpan SyncTimeSpan()
         {
             return stopwatch.IsRunning ? stopwatch.Elapsed : TimeSpan.FromDays(365);
+        }
+        public static void UpdateNTP()
+        {
+            ApplicationDataContainer applicationData = ApplicationData.Current.LocalSettings;
+            if (!(applicationData.Values["IsNTPenabled"] is bool))
+                applicationData.Values["IsNTPenabled"] = false;
+            if ((bool)applicationData.Values["IsNTPenabled"] == true)
+                syncTimer.Change(TimeSpan.FromMilliseconds(-1), TimeSpan.FromDays(2));
+            else
+                syncTimer.Change(TimeSpan.FromSeconds(5), TimeSpan.FromDays(2));
         }
         private void Controller1State(SerialComm sender)
         {
@@ -225,11 +238,19 @@ namespace WindowsIoT
             config.RTCCorrect = _tcB.ppm;
             if (config.MSenAuto)
             {
-                SolarTime.CurrentDate = ntpTime; //Corridor motion sensor
-                config.MSenEnable = SolarTime.Sunrise > ntpTime || ntpTime > SolarTime.Sunset;
-                float maxCurLvl = _msenRelA > _msenRelB ? _msenRelA : _msenRelB;
-                float minChLvl = config.MinLvlGet(0) > config.MinLvlGet(1) ? config.MinLvlGet(0) : config.MinLvlGet(1);
-                config.MsenOnLvl = (byte)((maxCurLvl > minChLvl ? maxCurLvl : minChLvl) * 255);
+                ApplicationDataContainer applicationData = ApplicationData.Current.LocalSettings;
+                if (!(applicationData.Values["IsNTPenabled"] is bool))
+                    applicationData.Values["IsNTPenabled"] = false;
+                if ((bool)applicationData.Values["IsNTPenabled"] == true)
+                    config.MSenEnable = true;
+                else
+                {
+                    SolarTime.CurrentDate = ntpTime; //Corridor motion sensor
+                    config.MSenEnable = SolarTime.Sunrise > ntpTime || ntpTime > SolarTime.Sunset;
+                }
+                float maxCurLvl = MathF.Max(_msenRelA, _msenRelB);
+                float minChLvl = MathF.Max(config.MinLvlGet(0), config.MinLvlGet(1));
+                config.MsenOnLvl = (byte)(MathF.Max(maxCurLvl, minChLvl) * 255);
             }
         }
         
