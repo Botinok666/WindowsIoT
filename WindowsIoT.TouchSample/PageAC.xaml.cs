@@ -71,7 +71,7 @@ namespace WindowsIoT
         {
             App.SerialDevs[Enums.SerialEndpoint.ShowerConfig].DataReady += AirConfigRdy;
             App.SerialDevs[Enums.SerialEndpoint.ShowerState].DataReady += AirStateRdy;
-            s485Dispatcher.EnqueueItem(App.SerialDevs[0]);
+            s485Dispatcher.EnqueueItem(App.SerialDevs[Enums.SerialEndpoint.ShowerConfig]);
             refreshReq = true;
             timer.Start();
             base.OnNavigatedTo(e);

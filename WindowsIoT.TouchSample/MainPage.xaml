@@ -52,7 +52,6 @@
             <RowDefinition Height="1*"/>
             <RowDefinition Height="1*"/>
             <RowDefinition Height="1*"/>
-            <RowDefinition Height="1*"/>
         </Grid.RowDefinitions>
 
         <Border Grid.Row="0" Grid.RowSpan="4" Grid.Column="2" Grid.ColumnSpan="2" Background="ForestGreen"/>
@@ -105,8 +104,6 @@
             <TextBlock x:Name="showerT" HorizontalAlignment="Center"/>
             <TextBlock x:Name="showerRH" HorizontalAlignment="Center"/>
         </StackPanel>
-
-        <Button Grid.Row="6" Grid.Column="0" Grid.ColumnSpan="6" x:Name="homeDateTime" Tapped="HomeDateTime_Click" FontWeight="Bold" Background="DimGray" Foreground="PaleTurquoise" Margin="0"/>
     </Grid>
 
 </Page>

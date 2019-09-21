@@ -6,6 +6,7 @@ using System.Linq;
 using System.Runtime.InteropServices.WindowsRuntime;
 using System.Threading.Tasks;
 using TouchPanels.Devices;
+using Windows.ApplicationModel.Resources;
 using Windows.Foundation;
 using Windows.Foundation.Collections;
 using Windows.UI.Core;
@@ -90,7 +91,7 @@ namespace WindowsIoT
         protected override void OnNavigatedTo(NavigationEventArgs e)
         {
             if (e == null)
-                throw new ArgumentNullException(nameof(e), "Argument shouldn't be null");
+                throw new ArgumentNullException(nameof(e), ResourceLoader.GetForCurrentView().GetString("NullArgExc"));
             pivot.Title = e.Parameter as string;
             switch (e.Parameter as string)
             {
@@ -329,6 +330,8 @@ namespace WindowsIoT
         private void Dispatcher_Tick(object sender, object e)
         {
             s485Dispatcher.EnqueueItem(chOnTime);
+            s485Dispatcher.EnqueueItem(state);
+            s485Dispatcher.EnqueueItem(config);
         }
 
         private void Snm_BackRequested(object _1, RoutedEventArgs _2)

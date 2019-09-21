@@ -25,6 +25,7 @@ using Windows.UI.Xaml.Media;
 using Windows.UI.Xaml.Navigation;
 using WindowsIoT.Communication;
 using static WindowsIoT.Communication.Enums;
+using Windows.ApplicationModel.Resources;
 
 namespace WindowsIoT
 {
@@ -38,15 +39,15 @@ namespace WindowsIoT
         /// executed, and as such is the logical equivalent of main() or WinMain().
         /// </summary>
         
-        private static DateTime ntpTime = new DateTime(1900, 1, 1);
-        private static TimeZoneInfo timeZoneInfo = null;
-        private static readonly Stopwatch stopwatch = new Stopwatch();
-        private static Timer syncTimer = null;
+        //private static DateTime ntpTime = new DateTime(1900, 1, 1);
+        //private static TimeZoneInfo timeZoneInfo = null;
+        //private static readonly Stopwatch stopwatch = new Stopwatch();
+        //private static Timer syncTimer = null;
         private Timer dispatcher = null;
         private readonly ManualResetEvent timerMRE = new ManualResetEvent(false);
-        private float _msenRelA, _msenRelB;
+        //private float _msenRelA, _msenRelB;
 
-        private readonly Util.SolarTimeNOAA SolarTime = null;
+        //private readonly Util.SolarTimeNOAA SolarTime = null;
 
         //private Semaphore dispatcherS = null;
         private readonly RS485Dispatcher s485Dispatcher = null;
@@ -55,6 +56,7 @@ namespace WindowsIoT
         //Brightness control maintained here
         private readonly Util.BrightnessControl brightness = null;
 
+        /*
         struct TimeCorrection
         {
             public bool saveRequest;
@@ -64,6 +66,7 @@ namespace WindowsIoT
         }
         private TimeCorrection _tcA = new TimeCorrection() { saveRequest = false, tick = 0, ppm = 0 },
             _tcB = new TimeCorrection() { saveRequest = false, tick = 0, ppm = 0 };
+        */
 
         public App()
         {
@@ -80,41 +83,42 @@ namespace WindowsIoT
                 { SerialEndpoint.LC2State, new ControllerState(0x31, 0) },
                 { SerialEndpoint.LC2GetOnTime, new ControllerChOnTime(0x34, 0) },
                 { SerialEndpoint.LC2SetOnTime, new ControllerOTSet(0, 0x33) } };
+            /*
             SerialDevs[SerialEndpoint.LC1State].DataReady += Controller1State;
             SerialDevs[SerialEndpoint.LC2State].DataReady += Controller2State;
             SerialDevs[SerialEndpoint.LC1Config].DataReady += Controller1Config;
             SerialDevs[SerialEndpoint.LC2Config].DataReady += Controller2Config;
+            */
             s485Dispatcher = RS485Dispatcher.GetInstance();
             s485Dispatcher.Ready += UART_Configured;
+            /*
             syncTimer = new Timer(SyncTimerCallback, timerMRE, TimeSpan.FromMilliseconds(-1), TimeSpan.FromDays(2));
             
             timeZoneInfo = TimeZoneInfo.FindSystemTimeZoneById("Russian Standard Time");
             SolarTime = Util.SolarTimeNOAA.GetInstance();
             SolarTime.Configure(timeZoneInfo, 47.215, 38.925);
+            */
             brightness = Util.BrightnessControl.GetInstance();
             Suspending += OnSuspending;
         }
 
         private void Dispatcher_Tick(object sender)
         {
-            s485Dispatcher.EnqueueItem(SerialDevs[SerialEndpoint.LC1State]);
-            s485Dispatcher.EnqueueItem(SerialDevs[SerialEndpoint.LC2State]);
-            s485Dispatcher.EnqueueItem(SerialDevs[SerialEndpoint.LC1Config]);
-            s485Dispatcher.EnqueueItem(SerialDevs[SerialEndpoint.LC2Config]);
             brightness.ReadLux();
         }
 
+        private void UART_Configured()
+        {
+            dispatcher = new Timer(Dispatcher_Tick, null, TimeSpan.FromSeconds(4), TimeSpan.FromSeconds(1));
+            s485Dispatcher.Start();
+        }
+        /*
         uint SwapEndianness(ulong x)
         {
             return (uint)(((x & 0x000000ff) << 24) |
                            ((x & 0x0000ff00) << 8) |
                            ((x & 0x00ff0000) >> 8) |
                            ((x & 0xff000000) >> 24));
-        }
-        private void UART_Configured()
-        {
-            dispatcher = new Timer(Dispatcher_Tick, null, TimeSpan.FromSeconds(4), TimeSpan.FromSeconds(1));
-            s485Dispatcher.Start();
         }
         //Network time protocol handling
         private void Socket_MessageReceived(DatagramSocket sender, DatagramSocketMessageReceivedEventArgs args)
@@ -259,6 +263,7 @@ namespace WindowsIoT
                 config.MsenOnLvl = (byte)(MathF.Max(maxCurLvl, minChLvl) * 255);
             }
         }
+        */
         
         /// <summary>
         /// Invoked when the application is launched normally by the end user.  Other entry points
@@ -276,7 +281,7 @@ namespace WindowsIoT
 
 #endif
             if (e is null)
-                throw new ArgumentNullException(nameof(e), "Parameter shouldn't be null");
+                throw new ArgumentNullException(nameof(e),ResourceLoader.GetForCurrentView().GetString("NullArgExc"));
 
             // Do not repeat app initialization when the Window already has content,
             // just ensure that the window is active

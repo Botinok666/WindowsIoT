@@ -31,7 +31,7 @@ namespace WindowsIoT
         readonly DispatcherTimer timer = new DispatcherTimer();
         readonly RS485Dispatcher s485Dispatcher = RS485Dispatcher.GetInstance();
         readonly BrightnessControl brightnessControl = BrightnessControl.GetInstance();
-        readonly SolarTimeNOAA SolarTime = SolarTimeNOAA.GetInstance();
+        //readonly SolarTimeNOAA SolarTime = SolarTimeNOAA.GetInstance();
 
         public TimeInfo()
         {
@@ -42,6 +42,7 @@ namespace WindowsIoT
 
         protected override void OnNavigatedTo(NavigationEventArgs e)
         {
+            /*
             DateTime dateTime = App.GetDateTime();
             SolarTime.CurrentDate = dateTime;
             if (dateTime <= SolarTime.Sunrise)
@@ -60,6 +61,7 @@ namespace WindowsIoT
                 SolarTime.CurrentDate = dateTime.AddDays(1);
                 sEvVal.Text = SolarTime.Sunrise.ToString("H:mm:ss", DateTimeFormatInfo.InvariantInfo);
             }
+            */
             App.SerialDevs[SerialEndpoint.LC1State].DataReady += C1StateRdy;
             App.SerialDevs[SerialEndpoint.LC2State].DataReady += C2StateRdy;
             RegModeSw.IsOn = brightnessControl.Mode == BrightnessControl.ControlMode.Auto;
@@ -68,21 +70,27 @@ namespace WindowsIoT
             AmbLuxMax.Value = 101 - Math.Exp((2050 - brightnessControl.MaxLux) * Math.Log(100) / 2000);
             timer.Start();
 
+            /*
             Windows.Storage.ApplicationDataContainer applicationData = 
                 Windows.Storage.ApplicationData.Current.LocalSettings;
             if (!(applicationData.Values["IsNTPenabled"] is bool))
                 applicationData.Values["IsNTPenabled"] = false;
             ntpEn.IsOn = (bool)applicationData.Values["IsNTPenabled"];
+            */
             base.OnNavigatedTo(e);
         }
         private void Timer_Tick(object sender, object e)
         {
+            /*
             TimeSpan timeSpan = App.SyncTimeSpan();
             ntpSync.Text = timeSpan.Equals(TimeSpan.FromDays(365)) ? "N/A" :
                 string.Format(CultureInfo.InvariantCulture,
                     "{0}:{1:D2}:{2:D2}", 
                     (int)timeSpan.TotalHours, timeSpan.Minutes, timeSpan.Seconds);
+            */
             rsLoad.Text = "RS485: " + s485Dispatcher.Statistics;
+            s485Dispatcher.EnqueueItem(App.SerialDevs[SerialEndpoint.LC1State]);
+            s485Dispatcher.EnqueueItem(App.SerialDevs[SerialEndpoint.LC2State]);
             LuxTLevel.Text = string.Format(CultureInfo.InvariantCulture,
                 "Ambient light level: {0:F1}lux", 
                 brightnessControl.Lux);
@@ -97,9 +105,6 @@ namespace WindowsIoT
             lc1Ot.Text = string.Format(CultureInfo.InvariantCulture,
                 "{0}:{1:D2}:{2:D2}", 
                 (int)timeSpan.TotalHours, timeSpan.Minutes, timeSpan.Seconds);
-            lc1ppm.Text = string.Format(CultureInfo.InvariantCulture,
-                "{0} ppm", 
-                (App.SerialDevs[SerialEndpoint.LC1Config] as ControllerConfig).RTCCorrect);
         }
         private void C2StateRdy(SerialComm sender)
         {
@@ -107,9 +112,6 @@ namespace WindowsIoT
             lc2Ot.Text = string.Format(CultureInfo.InvariantCulture,
                 "{0}:{1:D2}:{2:D2}", 
                 (int)timeSpan.TotalHours, timeSpan.Minutes, timeSpan.Seconds);
-            lc2ppm.Text = string.Format(CultureInfo.InvariantCulture,
-                "{0} ppm", 
-                (App.SerialDevs[SerialEndpoint.LC2Config] as ControllerConfig).RTCCorrect);
         }
         protected override void OnNavigatingFrom(NavigatingCancelEventArgs e)
         {
@@ -164,12 +166,6 @@ namespace WindowsIoT
                 BlMinLvl.IsEnabled = AmbLuxMax.IsEnabled = false;
                 BlLevel.IsEnabled = true;
             }
-        }
-
-        private void NtpEn_Toggled(object _1, RoutedEventArgs _2)
-        {
-            Windows.Storage.ApplicationData.Current.LocalSettings.Values["IsNTPenabled"] = ntpEn.IsOn;
-            App.UpdateNTP();
         }
     }
 }

@@ -49,15 +49,17 @@ namespace WindowsIoT
             dispatcher1s.Interval = TimeSpan.FromSeconds(1);
             //CalibrateTouch();
         }
-
         private void Dispatcher1s_Tick(object sender, object e)
         {
+            /*
             DateTime ntpTime = App.GetDateTime();
             homeDateTime.Content = (ntpTime.Year < 2018) ? "N/A" :
                 ntpTime.ToString("dddd d MMM H:mm:ss", DateTimeFormatInfo.InvariantInfo);
+            */
+            s485Dispatcher.EnqueueItem(App.SerialDevs[SerialEndpoint.LC1State]);
+            s485Dispatcher.EnqueueItem(App.SerialDevs[SerialEndpoint.LC2State]);
             s485Dispatcher.EnqueueItem(App.SerialDevs[SerialEndpoint.ShowerState]);
         }
-
         private async void Init()
         {
             tsc2046 = await Tsc2046.GetDefaultAsync().ConfigureAwait(true);
